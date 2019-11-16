@@ -54,7 +54,6 @@ class CameraHandler {
     private StreamDataListener streamDataListener;
 
     public interface StreamDataListener {
-        void images(FrameDataHolder dataHolder);
         void images(Bitmap msxBitmap, Bitmap dcBitmap);
     }
 
@@ -139,33 +138,6 @@ class CameraHandler {
         return Collections.unmodifiableList(foundCameraIdentities);
     }
 
-    /**
-     * Clear all known network cameras
-     */
-    public void clear() {
-        foundCameraIdentities.clear();
-    }
-
-    @Nullable
-    public Identity getCppEmulator() {
-        for (Identity foundCameraIdentity : foundCameraIdentities) {
-            if (foundCameraIdentity.deviceId.contains("C++ Emulator")) {
-                return foundCameraIdentity;
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    public Identity getFlirOneEmulator() {
-        for (Identity foundCameraIdentity : foundCameraIdentities) {
-            if (foundCameraIdentity.deviceId.contains("EMULATED FLIR ONE")) {
-                return foundCameraIdentity;
-            }
-        }
-        return null;
-    }
-
     @Nullable
     public Identity getFlirOne() {
         for (Identity foundCameraIdentity : foundCameraIdentities) {
@@ -209,12 +181,14 @@ class CameraHandler {
             //Get a bitmap with only IR data
             Bitmap msxBitmap;
             {
-                thermalImage.getFusion().setFusionMode(FusionMode.THERMAL_ONLY);
+                thermalImage.getFusion().setFusionMode(FusionMode.MSX);
                 msxBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
             }
 
             //Get a bitmap with the visual image, it might have different dimensions then the bitmap from THERMAL_ONLY
             Bitmap dcBitmap = BitmapAndroid.createBitmap(thermalImage.getFusion().getPhoto()).getBitMap();
+
+
 
             Log.d(TAG,"adding images to cache");
             streamDataListener.images(msxBitmap,dcBitmap);

@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "709842859000",
+    "firebase_url": "https://heatapp-313ac.firebaseio.com",
+    "project_id": "heatapp-313ac",
+    "storage_bucket": "heatapp-313ac.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709842859000:android:b897b32bae93391e105c0d",
+        "android_client_info": {
+          "package_name": "com.ubicomp.mstokfisz.heatapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "709842859000-817816sp7n1bs2gb1500p2h1v44k6rd6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlNCCt6EjYj3NGlarfui3VuQXbsooembo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "709842859000-817816sp7n1bs2gb1500p2h1v44k6rd6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

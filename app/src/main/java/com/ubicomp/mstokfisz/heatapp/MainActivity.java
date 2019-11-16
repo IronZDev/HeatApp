@@ -1,13 +1,3 @@
-/*
- * ******************************************************************
- * @title FLIR THERMAL SDK
- * @file MainActivity.java
- * @Author FLIR Systems AB
- *
- * @brief  Main UI of test application
- *
- * Copyright 2019:    FLIR Systems
- * ******************************************************************/
 package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
@@ -17,7 +7,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
 import com.flir.thermalsdk.ErrorCode;
 import com.flir.thermalsdk.androidsdk.ThermalSdkAndroid;
 import com.flir.thermalsdk.androidsdk.live.connectivity.UsbPermissionHandler;
@@ -27,20 +16,16 @@ import com.flir.thermalsdk.live.connectivity.ConnectionStatus;
 import com.flir.thermalsdk.live.connectivity.ConnectionStatusListener;
 import com.flir.thermalsdk.live.discovery.DiscoveryEventListener;
 import com.flir.thermalsdk.log.ThermalLog;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Sample application for scanning a FLIR ONE or a built in emulator
- * <p>
- * See the {@link CameraHandler} for how to preform discovery of a FLIR ONE camera, connecting to it and start streaming images
- * <p>
- * The MainActivity is primarily focused to "glue" different helper classes together and updating the UI components
- * <p/>
- * Please note, this is <b>NOT</b> production quality code, error handling has been kept to a minimum to keep the code as clear and concise as possible
+ *
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends SensorPortraitActivity {
 
     private static final String TAG = "MainActivity";
 
@@ -60,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private LinkedBlockingQueue<FrameDataHolder> framesBuffer = new LinkedBlockingQueue(21);
     private UsbPermissionHandler usbPermissionHandler = new UsbPermissionHandler();
 
+
     /**
      * Show message on the screen
      */
@@ -67,10 +53,27 @@ public class MainActivity extends AppCompatActivity {
         void show(String message);
     }
 
+    @Subscribe
+    public void onImageReady(ImageReadyEvent event) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                photoImage.setImageBitmap(event.img);
+            }
+        });
+    }
+
+//    public void onConfigurationChanged(Configuration config) {
+//        if (config.orientation != 2) {
+//            setRequestedOrientation(config.orientation);
+//        }
+//    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
 
         ThermalLog.LogLevel enableLoggingInDebug = BuildConfig.DEBUG ? ThermalLog.LogLevel.DEBUG : ThermalLog.LogLevel.NONE;
 
@@ -86,6 +89,8 @@ public class MainActivity extends AppCompatActivity {
         setupViews();
 
         startDiscovery();
+
+        updateConnectionText(null, ConnectionStatus.DISCONNECTED);
     }
 
     public void startDiscovery(View view) {
@@ -103,6 +108,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void disconnect(View view) {
         disconnect();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
     }
 
     /**
@@ -239,41 +256,28 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private final CameraHandler.StreamDataListener streamDataListener = new CameraHandler.StreamDataListener() {
-
-        @Override
-        public void images(FrameDataHolder dataHolder) {
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    msxImage.setImageBitmap(dataHolder.msxBitmap);
-                    photoImage.setImageBitmap(dataHolder.dcBitmap);
-                }
-            });
-        }
-
         @Override
         public void images(Bitmap msxBitmap, Bitmap dcBitmap) {
-
-            try {
-                framesBuffer.put(new FrameDataHolder(msxBitmap,dcBitmap));
-            } catch (InterruptedException e) {
+            FaceDetector.detectFaces(dcBitmap);
+//            try {
+//                framesBuffer.put(new FrameDataHolder(msxBitmap,dcBitmap));
+//            } catch (InterruptedException e) {
                 //if interrupted while waiting for adding a new item in the queue
-                Log.e(TAG,"images(), unable to add incoming images to frames buffer, exception:"+e);
-            }
-
+//                Log.e(TAG,"images(), unable to add incoming images to frames buffer, exception:"+e);
+//            }
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Log.d(TAG,"framebuffer size:"+framesBuffer.size());
-                    FrameDataHolder poll = framesBuffer.poll();
-                    msxImage.setImageBitmap(poll.msxBitmap);
-                    photoImage.setImageBitmap(poll.dcBitmap);
+                    msxImage.setImageBitmap(msxBitmap);
+//                    photoImage.setImageBitmap(dcBitmap);
                 }
             });
 
         }
     };
+
+
 
     /**
      * Camera Discovery thermalImageStreamListener, is notified if a new camera was found during a active discovery phase
