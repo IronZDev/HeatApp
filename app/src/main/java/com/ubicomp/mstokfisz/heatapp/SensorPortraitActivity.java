@@ -2,8 +2,10 @@ package com.ubicomp.mstokfisz.heatapp;
 
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.view.OrientationEventListener;
+import android.widget.ImageView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -74,7 +76,7 @@ public class SensorPortraitActivity extends AppCompatActivity {
                 }
             } else if (degrees >= REVERSE_PORTRAIT_START && degrees <= REVERSE_PORTRAIT_END){
 
-                if (mCurrentOrientation != CurrentOrientation.REVERSE_PORTRAIT){
+                if (mCurrentOrientation != CurrentOrientation.REVERSE_PORTRAIT) {
 
                     mCurrentOrientation = CurrentOrientation.REVERSE_PORTRAIT;
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
