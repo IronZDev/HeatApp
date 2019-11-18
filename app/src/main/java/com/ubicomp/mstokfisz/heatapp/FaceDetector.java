@@ -16,6 +16,7 @@ import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
 import com.ubicomp.mstokfisz.heatapp.events.MeasurementReadyEvent;
 import org.greenrobot.eventbus.EventBus;
 
+import java.util.Arrays;
 import java.util.List;
 
 class FaceDetector {
@@ -66,7 +67,8 @@ class FaceDetector {
 //                    thermalImage.getMeasurements().addRectangle(flirRectangle.x, flirRectangle.y, flirRectangle.width, flirRectangle.height);
 //                    Log.d(TAG, ""+thermalImage.getMeasurements().getRectangles().get(0).getAverage());
 //                    thermalImage.getMeasurements().clear();
-                    EventBus.getDefault().post(new ImageReadyEvent(mutableBitmap));
+                    Bitmap res = HeatMapGenerator.generateHeatMap(vals, mutableBitmap.getWidth(), mutableBitmap.getHeight(), Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble());
+                    EventBus.getDefault().post(new ImageReadyEvent(res));
 //                    Log.d(TAG, arr.toString());
 //                    EventBus.getDefault().post(new MeasurementReadyEvent());
                 } else {

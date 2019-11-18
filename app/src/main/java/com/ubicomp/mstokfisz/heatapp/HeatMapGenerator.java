@@ -1,9 +1,8 @@
 package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
+import com.google.android.gms.tasks.Task;
 
 class HeatMapGenerator {
     static Bitmap generateHeatMap(double[] data, int width, int height, double minVal, double maxVal) {
@@ -21,10 +20,10 @@ class HeatMapGenerator {
     }
 
     private static int calculateX(int num, int width) {
-        return num - ((num % width) * width);
+        return num - ((num / width) * width);
     }
 
     private static int calculateY(int num, int width) {
-        return num % width;
+        return num /  width;
     }
 }
