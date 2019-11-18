@@ -1,4 +1,4 @@
-package com.ubicomp.mstokfisz.heatapp;
+package com.ubicomp.mstokfisz.heatapp.events;
 
 import android.graphics.Bitmap;
 

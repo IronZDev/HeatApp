@@ -5,67 +5,73 @@ import android.os.Build;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import com.flir.thermalsdk.image.Rectangle;
+import com.flir.thermalsdk.image.ThermalImage;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.vision.face.Contour;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.face.*;
+import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
+import com.ubicomp.mstokfisz.heatapp.events.MeasurementReadyEvent;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.List;
 
 class FaceDetector {
+    private static final FirebaseVisionFaceDetectorOptions options =
+            new FirebaseVisionFaceDetectorOptions.Builder()
+                    .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
+                    .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
+                    .setMinFaceSize(0.3f)
+                    .build();
+    private static final FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
+            .getVisionFaceDetector(options);
+
     private static final String TAG = "FaceDetector";
     static Boolean isBusy = false;
 
-    static void detectFaces(Bitmap bmpImage, Bitmap thermalImage) {
+    static void detectFaces(Bitmap bmpImage, Bitmap msxImage, double[] vals) {
         isBusy = true;
+        // Detect in image
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bmpImage);
-        // [START set_detector_options]
-        FirebaseVisionFaceDetectorOptions options =
-                new FirebaseVisionFaceDetectorOptions.Builder()
-                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
-                        .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
-                        .build();
-        // [END set_detector_options]
 
-        // [START get_detector]
-        FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
-                .getVisionFaceDetector(options);
-//        EventBus.getDefault().post(new ImageReadyEvent(bmpImage));
-        // [END get_detector]
-
-        // [START run_detector]
         detector.detectInImage(image).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onSuccess(List<FirebaseVisionFace> firebaseVisionFaces) {
                 Log.d(TAG, "Faces detected: "+firebaseVisionFaces.size());
-                Paint paint = new Paint();
-                paint.setColor(Color.GREEN);
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(5);
-
-                Bitmap mutableBitmap = thermalImage.copy(Bitmap.Config.ARGB_8888, true);
+                Bitmap mutableBitmap = msxImage.copy(Bitmap.Config.ARGB_8888, true);
                 Canvas canvas = new Canvas(mutableBitmap);
-
+                Rect boundingRect = null;
                 for (FirebaseVisionFace face : firebaseVisionFaces) {
                     FirebaseVisionFaceContour contour = face.getContour(FirebaseVisionFaceContour.FACE);
                     Path path = new Path();
                     path.moveTo(contour.getPoints().get(0).getX(), contour.getPoints().get(0).getY());
                     contour.getPoints().forEach(point -> {
-                        path.lineTo(point.getX(), point.getY());
+                        path.lineTo(point.getX() , point.getY());
                     });
                     path.close();
-
-                    Paint redPaint = new Paint();
-                    redPaint.setColor(0XFFFF0000);
-                    redPaint.setStyle(Paint.Style.STROKE);
-                    redPaint.setStrokeWidth(8.0f);
-                    canvas.drawPath(path, redPaint);
+                    Paint paint = new Paint();
+                    paint.setColor(Color.RED);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(8.0f);
+                    boundingRect = face.getBoundingBox();
+                    canvas.drawRect(boundingRect, paint);
+                    paint.setColor(Color.GREEN);
+                    canvas.drawPath(path, paint);
                 }
-                EventBus.getDefault().post(new ImageReadyEvent(mutableBitmap));
+                if (firebaseVisionFaces.size() != 0) {
+//                    Rectangle flirRectangle = new Rectangle(boundingRect.left, boundingRect.top, boundingRect.width(), boundingRect.height());
+//                    thermalImage.getMeasurements().addRectangle(flirRectangle.x, flirRectangle.y, flirRectangle.width, flirRectangle.height);
+//                    Log.d(TAG, ""+thermalImage.getMeasurements().getRectangles().get(0).getAverage());
+//                    thermalImage.getMeasurements().clear();
+                    EventBus.getDefault().post(new ImageReadyEvent(mutableBitmap));
+//                    Log.d(TAG, arr.toString());
+//                    EventBus.getDefault().post(new MeasurementReadyEvent());
+                } else {
+                    EventBus.getDefault().post(new ImageReadyEvent(bmpImage));
+                }
                 isBusy = false;
             }
         }).addOnFailureListener(new OnFailureListener() {
@@ -76,6 +82,5 @@ class FaceDetector {
                 isBusy = false;
             }
         });;
-        // [END run_detector]
     }
 }

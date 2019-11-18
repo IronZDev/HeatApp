@@ -65,7 +65,7 @@
             android:layout_height="match_parent">
         <ImageView
                 android:id="@+id/msx_image"
-                android:layout_width="match_parent"
+                android:layout_width="158dp"
                 android:layout_height="match_parent"
                 android:minWidth="50dp"
                 android:maxWidth="50dp"

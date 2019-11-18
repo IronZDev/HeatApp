@@ -10,10 +10,14 @@
 package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.util.Log;
 import com.flir.thermalsdk.androidsdk.image.BitmapAndroid;
+import com.flir.thermalsdk.image.Point;
+import com.flir.thermalsdk.image.Rectangle;
 import com.flir.thermalsdk.image.ThermalImage;
 import com.flir.thermalsdk.image.fusion.FusionMode;
+import com.flir.thermalsdk.image.measurements.MeasurementSpot;
 import com.flir.thermalsdk.live.Camera;
 import com.flir.thermalsdk.live.CommunicationInterface;
 import com.flir.thermalsdk.live.Identity;
@@ -23,6 +27,7 @@ import com.flir.thermalsdk.live.discovery.DiscoveryFactory;
 import com.flir.thermalsdk.live.streaming.ThermalImageStreamListener;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -185,13 +190,32 @@ class CameraHandler {
                 msxBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
             }
 
-            //Get a bitmap with the visual image, it might have different dimensions then the bitmap from THERMAL_ONLY
-            Bitmap dcBitmap = BitmapAndroid.createBitmap(thermalImage.getFusion().getPhoto()).getBitMap();
+            //Get a bitmap with the visual image
+            Bitmap dcBitmap;
+            {
+                thermalImage.getFusion().setFusionMode(FusionMode.VISUAL_ONLY); // Has to be done that way to preserve ratio and zoom
+                dcBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
+            }
 
 
+//            Log.d(TAG, ""+ Arrays.toString(thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()))).length());
+//            Log.d(TAG,"Expected: "+ msxBitmap.getHeight()*msxBitmap.getWidth());
+
+//            thermalImage.getMeasurements().addSpot(1,1);
+//            MeasurementSpot measurementSpot = thermalImage.getMeasurements().getSpots().get(0);
+//            Log.d(TAG, measurementSpot.getPosition().x+" "+measurementSpot.getPosition().y+" "+measurementSpot.getValue().asCelsius());
+//            thermalImage.getMeasurements().clear();
+
+            // Generate face detection
+
+            double[] vals = thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()));
+
+            if (!FaceDetector.isBusy) {
+                FaceDetector.detectFaces(dcBitmap, msxBitmap, vals);
+            }
 
             Log.d(TAG,"adding images to cache");
-            streamDataListener.images(msxBitmap,dcBitmap);
+            streamDataListener.images(msxBitmap, dcBitmap);
         }
     };
 

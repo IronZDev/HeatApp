@@ -1,12 +1,8 @@
 package com.ubicomp.mstokfisz.heatapp;
 
-import android.app.Activity;
-import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
 import android.graphics.*;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -20,14 +16,10 @@ import com.flir.thermalsdk.live.connectivity.ConnectionStatus;
 import com.flir.thermalsdk.live.connectivity.ConnectionStatusListener;
 import com.flir.thermalsdk.live.discovery.DiscoveryEventListener;
 import com.flir.thermalsdk.log.ThermalLog;
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.Landmark;
+import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  *
@@ -49,11 +41,7 @@ public class MainActivity extends SensorPortraitActivity {
     private ImageView msxImage;
     private ImageView photoImage;
 
-    private LinkedBlockingQueue<FrameDataHolder> framesBuffer = new LinkedBlockingQueue(21);
     private UsbPermissionHandler usbPermissionHandler = new UsbPermissionHandler();
-
-    private MainActivity self;
-
     /**
      * Show message on the screen
      */
@@ -75,7 +63,6 @@ public class MainActivity extends SensorPortraitActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        self = this;
         setContentView(R.layout.activity_main);
 //        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
 
@@ -123,6 +110,8 @@ public class MainActivity extends SensorPortraitActivity {
     @Override
     protected void onStop() {
         EventBus.getDefault().unregister(this);
+        stopDiscovery();
+        disconnect();
         super.onStop();
     }
 
@@ -262,13 +251,9 @@ public class MainActivity extends SensorPortraitActivity {
     private final CameraHandler.StreamDataListener streamDataListener = new CameraHandler.StreamDataListener() {
         @Override
         public void images(Bitmap msxBitmap, Bitmap dcBitmap) {
-            if (!FaceDetector.isBusy) {
-                FaceDetector.detectFaces(dcBitmap, msxBitmap);
-            }
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Log.d(TAG,"framebuffer size:"+framesBuffer.size());
 //                    msxImage.setImageBitmap(msxBitmap);
                     photoImage.setImageBitmap(dcBitmap);
                 }
