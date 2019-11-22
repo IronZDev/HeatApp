@@ -1,14 +1,11 @@
 package com.ubicomp.mstokfisz.heatapp.events;
 
-import android.graphics.Rect;
-import com.flir.thermalsdk.image.ThermalImage;
+import com.ubicomp.mstokfisz.heatapp.MeasurementDataHolder;
 
 public class MeasurementReadyEvent {
-    public final Rect roiRect;
-    public final ThermalImage thermalImage;
+    public final MeasurementDataHolder measurementDataHolder;
 
-    public MeasurementReadyEvent(Rect roiRect, ThermalImage thermalImage) {
-        this.roiRect = roiRect;
-        this.thermalImage = thermalImage;
+    public MeasurementReadyEvent(MeasurementDataHolder measurementDataHolder) {
+        this.measurementDataHolder = measurementDataHolder;
     }
 }

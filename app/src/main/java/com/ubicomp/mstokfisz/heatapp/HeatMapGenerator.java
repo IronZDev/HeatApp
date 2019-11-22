@@ -2,15 +2,14 @@ package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import com.google.android.gms.tasks.Task;
 
 class HeatMapGenerator {
-    static Bitmap generateHeatMap(double[] data, int width, int height, double minVal, double maxVal) {
-        int[] mappedData = new int[data.length];
-        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        for (int i = 0; i < data.length; i++) {
-            mappedData[i] = mapValueToColor(data[i], minVal, maxVal);
-            bmp.setPixel(calculateX(i, width), calculateY(i, width), Color.rgb(mappedData[i], mappedData[i], mappedData[i]));
+    static Bitmap generateHeatMap(MeasurementDataHolder measurement) {
+        int[] mappedData = new int[measurement.data.length];
+        Bitmap bmp = Bitmap.createBitmap(measurement.width, measurement.height, Bitmap.Config.ARGB_8888);
+        for (int i = 0; i < measurement.data.length; i++) {
+            mappedData[i] = mapValueToColor(measurement.data[i], measurement.minVal, measurement.maxVal);
+            bmp.setPixel(calculateX(i, measurement.width), calculateY(i, measurement.width), Color.rgb(mappedData[i], mappedData[i], mappedData[i]));
         }
         return bmp;
     }

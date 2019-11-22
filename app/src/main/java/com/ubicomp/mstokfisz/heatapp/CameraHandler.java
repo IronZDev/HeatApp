@@ -211,7 +211,7 @@ class CameraHandler {
             double[] vals = thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()));
 
             if (!FaceDetector.isBusy) {
-                FaceDetector.detectFaces(dcBitmap, msxBitmap, vals);
+                FaceDetector.detectFaces(dcBitmap, msxBitmap, new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight()));
             }
 
             Log.d(TAG,"adding images to cache");

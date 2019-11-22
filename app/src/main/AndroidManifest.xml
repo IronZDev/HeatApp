@@ -11,6 +11,7 @@
                  >
         <activity android:name=".MainActivity"
                   android:screenOrientation="fullSensor"
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar.FullScreen"
                   android:configChanges="orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,4 +22,5 @@
                 android:name="com.google.firebase.ml.vision.DEPENDENCIES"
                 android:value="face"/>
     </application>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>-*
 </manifest>

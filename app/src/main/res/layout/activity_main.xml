@@ -1,85 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               tools:context=".MainActivity"
               android:layout_margin="10dp" android:orientation="vertical">
-
-    <!-- Title  -->
-
-    <!-- Show SDK version  -->
-
-    <!-- Start / Stop discovery buttons  -->
-    <LinearLayout
-            android:orientation="horizontal"
+    <ImageView
+            android:id="@+id/msx_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:minWidth="50dp"
+            android:maxWidth="50dp"
+            android:contentDescription="image with IR and visual data mixed"
+    />
+    <Button
+            android:text="@string/start_measurement_text"
+            android:onClick="changeMeasurementState"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-        <Button
-                android:text="@string/stop_discovery_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="stopDiscovery"
-                android:id="@+id/stop_discovery"/>
-        <Button
-                android:text="@string/start_discovery_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="startDiscovery"
-                android:id="@+id/start_discovery"/>
-        <TextView
-                android:id="@+id/discovery_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/discovery_status_text"
-                android:textSize="12sp"/>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:id="@+id/start_measurement"
+            android:layout_marginBottom="16dp"
+            android:layout_alignBottom="@+id/msx_image"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="130dp"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="130dp"/>
 
-    <!-- Connect to FLIR ONE / Emulators buttons  -->
-    <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-        <Button
-                android:id="@+id/connect_flir_one"
-                android:onClick="connectFlirOne"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/connect_f1_text"/>
-        <Button
-                android:id="@+id/disconnect_any"
-                android:onClick="disconnect"
-                android:text="@string/disconnect_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-        <TextView
-                android:id="@+id/connection_status_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/connection_status_text"/>
-
-    </LinearLayout>
-
-    <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        <ImageView
-                android:id="@+id/msx_image"
-                android:layout_width="158dp"
-                android:layout_height="match_parent"
-                android:minWidth="50dp"
-                android:maxWidth="50dp"
-                android:contentDescription="image with IR and visual data mixed"
-        />
-        <ImageView
-                android:id="@+id/photo_image"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:minWidth="50dp"
-                android:maxWidth="50dp"
-                android:contentDescription="image with only visual image"
-        />
-    </LinearLayout>
-
-
-</LinearLayout>
+</RelativeLayout>

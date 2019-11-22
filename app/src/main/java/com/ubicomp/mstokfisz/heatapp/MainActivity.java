@@ -4,12 +4,13 @@ import android.graphics.*;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 import com.flir.thermalsdk.ErrorCode;
 import com.flir.thermalsdk.androidsdk.ThermalSdkAndroid;
 import com.flir.thermalsdk.androidsdk.live.connectivity.UsbPermissionHandler;
+import com.flir.thermalsdk.live.CameraType;
 import com.flir.thermalsdk.live.CommunicationInterface;
 import com.flir.thermalsdk.live.Identity;
 import com.flir.thermalsdk.live.connectivity.ConnectionStatus;
@@ -21,12 +22,11 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
 
-/**
- *
- */
 public class MainActivity extends SensorPortraitActivity {
 
     private static final String TAG = "MainActivity";
+
+    private static ConnectionStatus currentConnectionStatus;
 
     //Handles Android permission for eg Network
     private PermissionHandler permissionHandler;
@@ -35,11 +35,12 @@ public class MainActivity extends SensorPortraitActivity {
     private CameraHandler cameraHandler;
 
     private Identity connectedIdentity = null;
-    private TextView connectionStatus;
-    private TextView discoveryStatus;
 
     private ImageView msxImage;
-    private ImageView photoImage;
+
+    private Button startMeasurement;
+
+    private TempDifferenceCalculator tempDifferenceCalculator;
 
     private UsbPermissionHandler usbPermissionHandler = new UsbPermissionHandler();
     /**
@@ -79,10 +80,7 @@ public class MainActivity extends SensorPortraitActivity {
 
         setupViews();
 
-        startDiscovery();
-
-        updateConnectionText(null, ConnectionStatus.DISCONNECTED);
-    }
+        startDiscovery(); }
 
     public void startDiscovery(View view) {
         startDiscovery();
@@ -145,7 +143,6 @@ public class MainActivity extends SensorPortraitActivity {
 
         connectedIdentity = identity;
 
-        updateConnectionText(identity, ConnectionStatus.CONNECTING);
         //IF your using "USB_DEVICE_ATTACHED" and "usb-device vendor-id" in the Android Manifest
         // you don't need to request permission, see documentation for more information
         if (UsbPermissionHandler.isFlirOne(identity)) {
@@ -183,14 +180,6 @@ public class MainActivity extends SensorPortraitActivity {
     }
 
     /**
-     * Update the UI text for connection status
-     */
-    private void updateConnectionText(Identity identity, ConnectionStatus status) {
-        String deviceId = identity != null ? identity.deviceId : "";
-        connectionStatus.setText(getString(R.string.connection_status_text, deviceId + " " + status));
-    }
-
-    /**
      * Start camera discovery
      */
     private void startDiscovery() {
@@ -210,12 +199,11 @@ public class MainActivity extends SensorPortraitActivity {
     private CameraHandler.DiscoveryStatus discoveryStatusListener = new CameraHandler.DiscoveryStatus() {
         @Override
         public void started() {
-            discoveryStatus.setText(getString(R.string.connection_status_text, "discovering"));
+
         }
 
         @Override
         public void stopped() {
-            discoveryStatus.setText(getString(R.string.connection_status_text, "not discovering"));
         }
     };
 
@@ -232,8 +220,7 @@ public class MainActivity extends SensorPortraitActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    updateConnectionText(connectedIdentity, connectionStatus);
-
+                    currentConnectionStatus = connectionStatus;
                     switch (connectionStatus) {
                         case CONNECTING: break;
                         case CONNECTED: {
@@ -255,7 +242,7 @@ public class MainActivity extends SensorPortraitActivity {
                 @Override
                 public void run() {
 //                    msxImage.setImageBitmap(msxBitmap);
-                    photoImage.setImageBitmap(dcBitmap);
+//                    photoImage.setImageBitmap(dcBitmap);
                 }
             });
 
@@ -276,7 +263,11 @@ public class MainActivity extends SensorPortraitActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    cameraHandler.add(identity);
+                    if (identity.cameraType == CameraType.FLIR_ONE) {
+                        cameraHandler.add(identity);
+                        if (currentConnectionStatus != ConnectionStatus.CONNECTING && currentConnectionStatus != ConnectionStatus.CONNECTED)
+                            connect(cameraHandler.getFlirOne());
+                    }
                 }
             });
         }
@@ -304,11 +295,19 @@ public class MainActivity extends SensorPortraitActivity {
 
 
     private void setupViews() {
-        connectionStatus = findViewById(R.id.connection_status_text);
-        discoveryStatus = findViewById(R.id.discovery_status);
-
         msxImage = findViewById(R.id.msx_image);
-        photoImage = findViewById(R.id.photo_image);
+        startMeasurement = findViewById(R.id.start_measurement);
+    }
+
+    public void changeMeasurementState(View view) {
+        if (startMeasurement.getText().toString().contains("Start")) {
+            startMeasurement.setText(getResources().getString(R.string.stop_measurement_text));
+            tempDifferenceCalculator = new TempDifferenceCalculator(this);
+        } else {
+            startMeasurement.setText(getResources().getString(R.string.start_measurement_text));
+            tempDifferenceCalculator.stop();
+            tempDifferenceCalculator = null;
+        }
     }
 
 }
