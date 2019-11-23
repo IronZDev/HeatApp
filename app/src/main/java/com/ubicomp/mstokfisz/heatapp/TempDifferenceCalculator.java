@@ -21,7 +21,7 @@ import java.util.*;
 
 public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
     private static Boolean running = true;
-    private static LinkedList<MeasurementDataHolder> measurementsQueue = new LinkedList<MeasurementDataHolder>();
+    private static LinkedList<MeasurementDataHolder> measurementsQueue = new LinkedList<>();
     private static double[] diffSum;
     private static int width = 0;
     private static int height = 0;
@@ -34,8 +34,9 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
     protected Void doInBackground(Void... Voids) {
         while (running) {
             if (measurementsQueue != null && measurementsQueue.size() >= 2) { // If there are two frames ready
-                MeasurementDataHolder firstMeasurement = measurementsQueue.getFirst(); // Get first measurement and delete from queue
-                MeasurementDataHolder secondMeasurement = measurementsQueue.peekFirst(); // Get second (now first) but do not delete from queue
+                Log.d(TAG, Integer.toString(measurementsQueue.size()));
+                MeasurementDataHolder firstMeasurement = measurementsQueue.removeFirst(); // Get first measurement and delete from queue
+                MeasurementDataHolder secondMeasurement = measurementsQueue.getFirst(); // Get second (now first) but do not delete from queue
                 if (width == 0 || height == 0 || diffSum == null) { // for first measurement set everything
                     width = firstMeasurement.width;
                     height = firstMeasurement.height;
@@ -48,41 +49,36 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
 
             }
         }
-        return null;
-    }
-
-    @Override
-    protected void onPostExecute(Void aVoid) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
         String formatedDate = sdf.format(new Date());
+        Log.d(TAG, Arrays.toString(diffSum));
         Bitmap differencesHeatMap = HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height));
-        String file_path = Environment.getExternalStorageDirectory().getAbsolutePath() +
-                "/FaceDetection";
-        Log.d(TAG, "File saved to "+file_path);
         String fileName = "FLIROne-" + formatedDate + ".png";
-        File dir = new File(file_path);
+        File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "HeatApp");
         if(!dir.exists())
             dir.mkdirs();
         File file = new File(dir,fileName);
-        FileOutputStream fOut = null;
+        FileOutputStream fOut;
         try {
             fOut = new FileOutputStream(file);
             differencesHeatMap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
             fOut.flush();
             fOut.close();
             MediaScannerConnection.scanFile(context,
-                    new String[]{file_path + "/" + fileName}, null,
-                    new MediaScannerConnection.OnScanCompletedListener() {
-                        @Override
-                        public void onScanCompleted(String path, Uri uri) {
-                            Log.i("ExternalStorage", "Scanned " + path + ":");
-                            Log.i("ExternalStorage", "-> uri=" + uri);
-                        }
-
+                    new String[]{file.getAbsolutePath()}, null,
+                    (path, uri) -> {
+                        Log.i("ExternalStorage", "Scanned " + path + ":");
+                        Log.i("ExternalStorage", "-> uri=" + uri);
                     });
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.d(TAG, "File not saved");
+            Log.e(TAG, Objects.requireNonNull(e.getMessage()));
         }
+        return null;
+    }
+
+    @Override
+    protected void onPostExecute(Void aVoid) {
         progDialog.dismiss();
         if (context != null)
             Toast.makeText(context, "Heatmap created succesfully!", Toast.LENGTH_SHORT).show();

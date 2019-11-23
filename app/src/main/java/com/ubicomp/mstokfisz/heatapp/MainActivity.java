@@ -1,12 +1,21 @@
 package com.ubicomp.mstokfisz.heatapp;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.*;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.flir.thermalsdk.ErrorCode;
 import com.flir.thermalsdk.androidsdk.ThermalSdkAndroid;
 import com.flir.thermalsdk.androidsdk.live.connectivity.UsbPermissionHandler;
@@ -22,14 +31,26 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class MainActivity extends SensorPortraitActivity {
 
     private static final String TAG = "MainActivity";
 
-    private static ConnectionStatus currentConnectionStatus;
+    /**
+     * Permissions that need to be explicitly requested from end user.
+     */
+    private static final String[] REQUIRED_SDK_PERMISSIONS = new String[] {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
 
-    //Handles Android permission for eg Network
-    private PermissionHandler permissionHandler;
+    // WakeLock for keeping the screen always on
+    protected PowerManager.WakeLock mWakeLock;
+
+    private static ConnectionStatus currentConnectionStatus;
 
     //Handles network camera operations
     private CameraHandler cameraHandler;
@@ -52,15 +73,13 @@ public class MainActivity extends SensorPortraitActivity {
 
     @Subscribe
     public void onImageReady(ImageReadyEvent event) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                msxImage.setImageBitmap(event.img);
+        runOnUiThread(() -> {
+            msxImage.setImageBitmap(event.img);
 //                photoImage.setImageBitmap(event.img);
-            }
         });
     }
 
+    @SuppressLint("InvalidWakeLockTag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,13 +93,15 @@ public class MainActivity extends SensorPortraitActivity {
         //ThermalLog will show log from the Thermal SDK in standards android log framework
         ThermalSdkAndroid.init(getApplicationContext(), enableLoggingInDebug);
 
-        permissionHandler = new PermissionHandler(showMessage, MainActivity.this);
-
         cameraHandler = new CameraHandler();
 
         setupViews();
 
-        startDiscovery(); }
+        checkPermissions();
+
+        // Keeps the screen on when the Activity is in the foreground
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
 
     public void startDiscovery(View view) {
         startDiscovery();
@@ -102,6 +123,7 @@ public class MainActivity extends SensorPortraitActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        startDiscovery();
         EventBus.getDefault().register(this);
     }
 
@@ -113,13 +135,9 @@ public class MainActivity extends SensorPortraitActivity {
         super.onStop();
     }
 
-    /**
-     * Handle Android permission request response for Bluetooth permissions
-     */
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        Log.d(TAG, "onRequestPermissionsResult() called with: requestCode = [" + requestCode + "], permissions = [" + permissions + "], grantResults = [" + grantResults + "]");
-        permissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     /**
@@ -155,12 +173,12 @@ public class MainActivity extends SensorPortraitActivity {
 
     private UsbPermissionHandler.UsbPermissionListener permissionListener = new UsbPermissionHandler.UsbPermissionListener() {
         @Override
-        public void permissionGranted(Identity identity) {
+        public void permissionGranted(@NotNull Identity identity) {
             cameraHandler.connect(identity, connectionStatusListener);
         }
 
         @Override
-        public void permissionDenied(Identity identity) {
+        public void permissionDenied(@NotNull Identity identity) {
             MainActivity.this.showMessage.show("Permission was denied for identity ");
         }
 
@@ -217,37 +235,25 @@ public class MainActivity extends SensorPortraitActivity {
         public void onConnectionStatusChanged(@NotNull ConnectionStatus connectionStatus, @org.jetbrains.annotations.Nullable ErrorCode errorCode) {
             Log.d(TAG, "onConnectionStatusChanged connectionStatus:" + connectionStatus + " errorCode:" + errorCode);
 
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    currentConnectionStatus = connectionStatus;
-                    switch (connectionStatus) {
-                        case CONNECTING: break;
-                        case CONNECTED: {
-                            cameraHandler.startStream(streamDataListener);
-                        }
-                        break;
-                        case DISCONNECTING: break;
-                        case DISCONNECTED: break;
+            runOnUiThread(() -> {
+                currentConnectionStatus = connectionStatus;
+                switch (connectionStatus) {
+                    case CONNECTING: break;
+                    case CONNECTED: {
+                        cameraHandler.startStream(streamDataListener);
                     }
+                    break;
+                    case DISCONNECTING: break;
+                    case DISCONNECTED: break;
                 }
             });
         }
     };
 
-    private final CameraHandler.StreamDataListener streamDataListener = new CameraHandler.StreamDataListener() {
-        @Override
-        public void images(Bitmap msxBitmap, Bitmap dcBitmap) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
+    private final CameraHandler.StreamDataListener streamDataListener = (msxBitmap, dcBitmap) -> runOnUiThread(() -> {
 //                    msxImage.setImageBitmap(msxBitmap);
 //                    photoImage.setImageBitmap(dcBitmap);
-                }
-            });
-
-        }
-    };
+    });
 
 
 
@@ -260,14 +266,11 @@ public class MainActivity extends SensorPortraitActivity {
         @Override
         public void onCameraFound(Identity identity) {
             Log.d(TAG, "onCameraFound identity:" + identity);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (identity.cameraType == CameraType.FLIR_ONE) {
-                        cameraHandler.add(identity);
-                        if (currentConnectionStatus != ConnectionStatus.CONNECTING && currentConnectionStatus != ConnectionStatus.CONNECTED)
-                            connect(cameraHandler.getFlirOne());
-                    }
+            runOnUiThread(() -> {
+                if (identity.cameraType == CameraType.FLIR_ONE) {
+                    cameraHandler.add(identity);
+                    if (currentConnectionStatus != ConnectionStatus.CONNECTING && currentConnectionStatus != ConnectionStatus.CONNECTED)
+                        connect(cameraHandler.getFlirOne());
                 }
             });
         }
@@ -276,22 +279,14 @@ public class MainActivity extends SensorPortraitActivity {
         public void onDiscoveryError(CommunicationInterface communicationInterface, ErrorCode errorCode) {
             Log.d(TAG, "onDiscoveryError communicationInterface:" + communicationInterface + " errorCode:" + errorCode);
 
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    stopDiscovery();
-                    MainActivity.this.showMessage.show("onDiscoveryError communicationInterface:" + communicationInterface + " errorCode:" + errorCode);
-                }
+            runOnUiThread(() -> {
+                stopDiscovery();
+                MainActivity.this.showMessage.show("onDiscoveryError communicationInterface:" + communicationInterface + " errorCode:" + errorCode);
             });
         }
     };
 
-    private ShowMessage showMessage = new ShowMessage() {
-        @Override
-        public void show(String message) {
-            Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
-        }
-    };
+    private ShowMessage showMessage = message -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
 
 
     private void setupViews() {
@@ -301,13 +296,55 @@ public class MainActivity extends SensorPortraitActivity {
 
     public void changeMeasurementState(View view) {
         if (startMeasurement.getText().toString().contains("Start")) {
-            startMeasurement.setText(getResources().getString(R.string.stop_measurement_text));
-            tempDifferenceCalculator = new TempDifferenceCalculator(this);
+            if (currentConnectionStatus == ConnectionStatus.CONNECTED) {
+                startMeasurement.setText(getResources().getString(R.string.stop_measurement_text));
+                tempDifferenceCalculator = new TempDifferenceCalculator(this);
+            }
         } else {
             startMeasurement.setText(getResources().getString(R.string.start_measurement_text));
             tempDifferenceCalculator.stop();
-            tempDifferenceCalculator = null;
+//            tempDifferenceCalculator = null;
         }
     }
 
+    /**
+     * Checks the dynamically-controlled permissions and requests missing permissions from end user.
+     */
+    private void checkPermissions() {
+        final List<String> missingPermissions = new ArrayList<>();
+        // check all required dynamic permissions
+        for (final String permission : REQUIRED_SDK_PERMISSIONS) {
+            final int result = ContextCompat.checkSelfPermission(this, permission);
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(permission);
+            }
+        }
+        if (!missingPermissions.isEmpty()) {
+            // request all missing permissions
+            final String[] permissions = missingPermissions
+                    .toArray(new String[0]);
+            ActivityCompat.requestPermissions(this, permissions, 1);
+        } else {
+            final int[] grantResults = new int[REQUIRED_SDK_PERMISSIONS.length];
+            Arrays.fill(grantResults, PackageManager.PERMISSION_GRANTED);
+            onRequestPermissionsResult(1, REQUIRED_SDK_PERMISSIONS,
+                    grantResults);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == 1) {
+            for (int index = permissions.length - 1; index >= 0; --index) {
+                if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
+                    // exit the app if one permission is not granted
+                    Toast.makeText(this, "Required permission '" + permissions[index]
+                            + "' not granted, exiting", Toast.LENGTH_LONG).show();
+                    finish();
+                    return;
+                }
+            }
+        }
+    }
 }

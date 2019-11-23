@@ -2,10 +2,8 @@ package com.ubicomp.mstokfisz.heatapp;
 
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
-import android.graphics.Matrix;
 import android.os.Bundle;
 import android.view.OrientationEventListener;
-import android.widget.ImageView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
