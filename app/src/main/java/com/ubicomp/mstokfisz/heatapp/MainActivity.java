@@ -2,11 +2,10 @@ package com.ubicomp.mstokfisz.heatapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.*;
+import android.content.res.Configuration;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -35,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends SensorPortraitActivity {
+public class MainActivity extends SensorPortraitActivity implements SensorPortraitActivity.OrientationChangeListener {
 
     private static final String TAG = "MainActivity";
 
@@ -46,9 +45,6 @@ public class MainActivity extends SensorPortraitActivity {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
-
-    // WakeLock for keeping the screen always on
-    protected PowerManager.WakeLock mWakeLock;
 
     private static ConnectionStatus currentConnectionStatus;
 
@@ -64,6 +60,23 @@ public class MainActivity extends SensorPortraitActivity {
     private TempDifferenceCalculator tempDifferenceCalculator;
 
     private UsbPermissionHandler usbPermissionHandler = new UsbPermissionHandler();
+
+    @Override
+    public void onPortrait() {
+        Log.d(TAG, "Orientation portrait");
+//        msxImage.setRotation(0);
+//        FaceDetector.isRotated = false;
+        RotationHandler.isRotated = false;
+    }
+
+    @Override
+    public void onReversePortrait() {
+        Log.d(TAG, "Orientation reversed portrait");
+//        msxImage.setRotation(180);
+//        FaceDetector.isRotated = true;
+        RotationHandler.isRotated = true;
+    }
+
     /**
      * Show message on the screen
      */
@@ -125,12 +138,14 @@ public class MainActivity extends SensorPortraitActivity {
         super.onStart();
         startDiscovery();
         EventBus.getDefault().register(this);
+        setOrientationChangeListener(this);
     }
 
     @Override
     protected void onStop() {
+        setOrientationChangeListener(null);
         EventBus.getDefault().unregister(this);
-        stopDiscovery();
+        stopDiscovery(); // Also stops stream
         disconnect();
         super.onStop();
     }
@@ -250,7 +265,8 @@ public class MainActivity extends SensorPortraitActivity {
         }
     };
 
-    private final CameraHandler.StreamDataListener streamDataListener = (msxBitmap, dcBitmap) -> runOnUiThread(() -> {
+    private final CameraHandler.StreamDataListener streamDataListener = (msxBitmap, dcBitmap)
+    -> runOnUiThread(() -> {
 //                    msxImage.setImageBitmap(msxBitmap);
 //                    photoImage.setImageBitmap(dcBitmap);
     });
@@ -303,7 +319,6 @@ public class MainActivity extends SensorPortraitActivity {
         } else {
             startMeasurement.setText(getResources().getString(R.string.start_measurement_text));
             tempDifferenceCalculator.stop();
-//            tempDifferenceCalculator = null;
         }
     }
 

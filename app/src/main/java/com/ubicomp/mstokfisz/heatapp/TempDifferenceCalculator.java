@@ -1,13 +1,11 @@
 package com.ubicomp.mstokfisz.heatapp;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.icu.text.SimpleDateFormat;
 import android.media.MediaScannerConnection;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
@@ -19,14 +17,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
+
 public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
-    private static Boolean running = true;
+    static Boolean running = false;
     private static LinkedList<MeasurementDataHolder> measurementsQueue = new LinkedList<>();
     private static double[] diffSum;
     private static int width = 0;
     private static int height = 0;
     private static final String TAG = "TempDiffCalc";
     private static AlertDialog progDialog;
+    private static Boolean isRotated = false;
     @SuppressLint("StaticFieldLeak")
     private Context context;
 
@@ -45,6 +46,7 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
                 }
                 for (int i = 0; i < firstMeasurement.data.length; i++) { // Assume same size for now
                     diffSum[i] += Math.abs(secondMeasurement.data[i] - firstMeasurement.data[i]); // For now get the absolute value
+//                    diffSum[i] += Math.abs((secondMeasurement.data[i] - secondMeasurement.minVal) - (firstMeasurement.data[i] - firstMeasurement.minVal)); // Alternative mode with subtracting minValues
                 }
 
             }
@@ -52,7 +54,7 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
         String formatedDate = sdf.format(new Date());
         Log.d(TAG, Arrays.toString(diffSum));
-        Bitmap differencesHeatMap = HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height));
+        Bitmap differencesHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height)));
         String fileName = "FLIROne-" + formatedDate + ".png";
         File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "HeatApp");
         if(!dir.exists())
@@ -86,12 +88,11 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
 
     TempDifferenceCalculator(MainActivity context) {
         this.execute();
+        running = true;
         this.context = context;
-        FaceDetector.calculateTempDifference = true;
     }
 
     void stop() {
-        FaceDetector.calculateTempDifference = false;
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setCancelable(false); // if you want user to wait for some process to finish,
         builder.setView(R.layout.loading_dialog);

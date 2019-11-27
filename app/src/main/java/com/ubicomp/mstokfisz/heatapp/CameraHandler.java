@@ -190,12 +190,14 @@ class CameraHandler {
                 msxBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
             }
 
-            //Get a bitmap with the visual image
-            Bitmap dcBitmap;
-            {
-                thermalImage.getFusion().setFusionMode(FusionMode.VISUAL_ONLY); // Has to be done that way to preserve ratio and zoom
-                dcBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
-            }
+            Bitmap dcBitmap = BitmapAndroid.createBitmap(thermalImage.getFusion().getPhoto()).getBitMap();
+
+//            Get a bitmap with the visual image CANT USE THAT MEMORY LEAK!!
+//            Bitmap dcBitmap;
+//            {
+//                thermalImage.getFusion().setFusionMode(FusionMode.VISUAL_ONLY); // Has to be done that way to preserve ratio and zoom
+//                dcBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
+//            }
 
 
 //            Log.d(TAG, ""+ Arrays.toString(thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()))).length());
@@ -209,13 +211,17 @@ class CameraHandler {
             // Generate face detection
 
             double[] vals = thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()));
-
+            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight());
             if (!FaceDetector.isBusy) {
-                FaceDetector.detectFaces(dcBitmap, msxBitmap, new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight()));
+                FaceDetector.detectFaces(dcBitmap, msxBitmap, currentMeasurement);
             }
 
-            Log.d(TAG,"adding images to cache");
-            streamDataListener.images(msxBitmap, dcBitmap);
+            if (TempDifferenceCalculator.running) {
+                TempDifferenceCalculator.newMeasurement(currentMeasurement);
+            }
+//            Log.d(TAG,"adding images to cache");
+//            streamDataListener.images(msxBitmap, msxBitmap);
+//            streamDataListener.images(msxBitmap, dcBitmap);
         }
     };
 

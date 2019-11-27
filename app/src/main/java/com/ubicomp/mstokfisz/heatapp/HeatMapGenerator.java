@@ -3,7 +3,7 @@ package com.ubicomp.mstokfisz.heatapp;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 
-class HeatMapGenerator {
+final class HeatMapGenerator {
     static Bitmap generateHeatMap(MeasurementDataHolder measurement) {
         int[] mappedData = new int[measurement.data.length];
         Bitmap bmp = Bitmap.createBitmap(measurement.width, measurement.height, Bitmap.Config.ARGB_8888);

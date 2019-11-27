@@ -52,7 +52,7 @@ public class SensorPortraitActivity extends AppCompatActivity {
         mOrientationListener.disable();
     }
 
-    //optional
+//    optional
     public void setOrientationChangeListener(OrientationChangeListener listener){
         mListener = listener;
     }
