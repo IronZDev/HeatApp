@@ -8,4 +8,7 @@
     <string name="disconnect_text">Disconnect</string>
     <string name="start_measurement_text">Start measurement</string>
     <string name="stop_measurement_text">Stop measurement</string>
+    <string name="calibrate_text">Calibrate</string>
+    <string name="waiting_for_camera">Waiting for camera…</string>
+    <string name="try_replugging_the_camera">If the process takes too long try replugging the camera</string>
 </resources>

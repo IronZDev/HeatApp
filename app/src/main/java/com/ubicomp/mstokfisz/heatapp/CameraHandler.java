@@ -13,11 +13,9 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.util.Log;
 import com.flir.thermalsdk.androidsdk.image.BitmapAndroid;
-import com.flir.thermalsdk.image.Point;
 import com.flir.thermalsdk.image.Rectangle;
 import com.flir.thermalsdk.image.ThermalImage;
 import com.flir.thermalsdk.image.fusion.FusionMode;
-import com.flir.thermalsdk.image.measurements.MeasurementSpot;
 import com.flir.thermalsdk.live.Camera;
 import com.flir.thermalsdk.live.CommunicationInterface;
 import com.flir.thermalsdk.live.Identity;
@@ -31,6 +29,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import static com.ubicomp.mstokfisz.heatapp.RotationHandler.zoomBitmap;
 
 /**
  * Encapsulates the handling of a FLIR ONE camera or built in emulator, discovery, connecting and start receiving images.
@@ -186,11 +186,12 @@ class CameraHandler {
             //Get a bitmap with only IR data
             Bitmap msxBitmap;
             {
-                thermalImage.getFusion().setFusionMode(FusionMode.MSX);
+                thermalImage.getFusion().setFusionMode(FusionMode.VISUAL_ONLY);
                 msxBitmap = BitmapAndroid.createBitmap(thermalImage.getImage()).getBitMap();
             }
 
             Bitmap dcBitmap = BitmapAndroid.createBitmap(thermalImage.getFusion().getPhoto()).getBitMap();
+//            dcBitmap = zoomBitmap(dcBitmap, 0.725);
 
 //            Get a bitmap with the visual image CANT USE THAT MEMORY LEAK!!
 //            Bitmap dcBitmap;
@@ -219,9 +220,9 @@ class CameraHandler {
             if (TempDifferenceCalculator.running) {
                 TempDifferenceCalculator.newMeasurement(currentMeasurement);
             }
-//            Log.d(TAG,"adding images to cache");
-//            streamDataListener.images(msxBitmap, msxBitmap);
-//            streamDataListener.images(msxBitmap, dcBitmap);
+            Log.d(TAG,"adding images to cache");
+            streamDataListener.images(msxBitmap, msxBitmap);
+            streamDataListener.images(msxBitmap, dcBitmap);
         }
     };
 

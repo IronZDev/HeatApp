@@ -23,11 +23,11 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
     static Boolean running = false;
     private static LinkedList<MeasurementDataHolder> measurementsQueue = new LinkedList<>();
     private static double[] diffSum;
+    private static double[] diffFreq; // Frequency of changes
     private static int width = 0;
     private static int height = 0;
     private static final String TAG = "TempDiffCalc";
     private static AlertDialog progDialog;
-    private static Boolean isRotated = false;
     @SuppressLint("StaticFieldLeak")
     private Context context;
 
@@ -42,10 +42,15 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
                     width = firstMeasurement.width;
                     height = firstMeasurement.height;
                     diffSum = new double[firstMeasurement.data.length];
-                    Arrays.fill(diffSum, 0.0);
+                    diffFreq = new double[firstMeasurement.data.length];
+                    Arrays.fill(diffSum, 0);
+                    Arrays.fill(diffFreq, 0);
                 }
                 for (int i = 0; i < firstMeasurement.data.length; i++) { // Assume same size for now
                     diffSum[i] += Math.abs(secondMeasurement.data[i] - firstMeasurement.data[i]); // For now get the absolute value
+                    if (secondMeasurement.data[i] != firstMeasurement.data[i]) { // If the temp changed then add
+                        diffFreq[i]++;
+                    }
 //                    diffSum[i] += Math.abs((secondMeasurement.data[i] - secondMeasurement.minVal) - (firstMeasurement.data[i] - firstMeasurement.minVal)); // Alternative mode with subtracting minValues
                 }
 
@@ -54,20 +59,25 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
         String formatedDate = sdf.format(new Date());
         Log.d(TAG, Arrays.toString(diffSum));
-        Bitmap differencesHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height)));
-        String fileName = "FLIROne-" + formatedDate + ".png";
+        Bitmap diffSumHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height)));
+        Bitmap diffFreqHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffFreq,  Arrays.stream(diffFreq).min().getAsDouble(), Arrays.stream(diffFreq).max().getAsDouble(), width, height)));
+        String diffSumFileName = "DifferenceSum-" + formatedDate + ".png";
+        String diffFreqFileName = "ChangeFrequency-" + formatedDate + ".png";
         File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "HeatApp");
         if(!dir.exists())
             dir.mkdirs();
-        File file = new File(dir,fileName);
+        File diffSumFile = new File(dir,diffSumFileName);
+        File diffFreqFile = new File(dir, diffFreqFileName);
         FileOutputStream fOut;
         try {
-            fOut = new FileOutputStream(file);
-            differencesHeatMap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
+            fOut = new FileOutputStream(diffSumFile);
+            diffSumHeatMap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
+            fOut = new FileOutputStream(diffFreqFile);
+            diffFreqHeatMap.compress(Bitmap.CompressFormat.PNG, 85, fOut);
             fOut.flush();
             fOut.close();
             MediaScannerConnection.scanFile(context,
-                    new String[]{file.getAbsolutePath()}, null,
+                    new String[]{diffSumFile.getAbsolutePath(), diffFreqFile.getAbsolutePath()}, null,
                     (path, uri) -> {
                         Log.i("ExternalStorage", "Scanned " + path + ":");
                         Log.i("ExternalStorage", "-> uri=" + uri);

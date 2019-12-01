@@ -14,4 +14,12 @@ final class RotationHandler {
             return bmp;
         }
     }
+    static Bitmap zoomBitmap (Bitmap bmp, Double scale) {
+        int widthOffset = (int) ((1 - scale)/2 * bmp.getWidth());
+        int heightOffset = (int) ((1 - scale)/2 * bmp.getHeight());
+        int numWidthPixels = bmp.getWidth() - 2 * widthOffset;
+        int numHeightPixels = bmp.getHeight() - 2 * heightOffset;
+        Bitmap rescaledBitmap = Bitmap.createBitmap(bmp, widthOffset, heightOffset, numWidthPixels, numHeightPixels, null, true);
+        return rescaledBitmap;
+    }
 }

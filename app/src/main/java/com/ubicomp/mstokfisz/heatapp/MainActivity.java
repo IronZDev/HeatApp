@@ -2,9 +2,8 @@ package com.ubicomp.mstokfisz.heatapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.pm.ActivityInfo;
+import android.app.AlertDialog;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -30,9 +29,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class MainActivity extends SensorPortraitActivity implements SensorPortraitActivity.OrientationChangeListener {
 
@@ -55,11 +52,17 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
 
     private ImageView msxImage;
 
-    private Button startMeasurement;
+    private Button startMeasurementBtn;
+
+    private Button calibrateBtn;
 
     private TempDifferenceCalculator tempDifferenceCalculator;
 
     private UsbPermissionHandler usbPermissionHandler = new UsbPermissionHandler();
+
+    private static AlertDialog waitForCameraDialog;
+
+    private MainActivity self;
 
     @Override
     public void onPortrait() {
@@ -96,6 +99,7 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        self = this;
         setContentView(R.layout.activity_main);
 //        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
 
@@ -116,27 +120,15 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
-    public void startDiscovery(View view) {
-        startDiscovery();
-    }
-
-    public void stopDiscovery(View view) {
-        stopDiscovery();
-    }
-
-
-    public void connectFlirOne(View view) {
-        connect(cameraHandler.getFlirOne());
-    }
-
-    public void disconnect(View view) {
-        disconnect();
-    }
-
     @Override
     protected void onStart() {
         super.onStart();
+        Identity flir = cameraHandler.getFlirOne();
+        if (flir != null) {
+            connect(flir);
+        } else {
         startDiscovery();
+        }
         EventBus.getDefault().register(this);
         setOrientationChangeListener(this);
     }
@@ -160,16 +152,8 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
      */
     private void connect(Identity identity) {
         //We don't have to stop a discovery but it's nice to do if we have found the camera that we are looking for
-        cameraHandler.stopDiscovery(discoveryStatusListener);
-
-        if (connectedIdentity != null) {
-            Log.d(TAG, "connect(), in *this* code sample we only support one camera connection at the time");
-            showMessage.show("connect(), in *this* code sample we only support one camera connection at the time");
-            return;
-        }
-
         if (identity == null) {
-            Log.d(TAG, "connect(), can't connect, no camera available");
+            Log.d(TAG, "connect(), can't connect, no camera available"); // Add retry
             showMessage.show("connect(), can't connect, no camera available");
             return;
         }
@@ -232,11 +216,17 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
     private CameraHandler.DiscoveryStatus discoveryStatusListener = new CameraHandler.DiscoveryStatus() {
         @Override
         public void started() {
-
+            Log.d(TAG, "Discovery started");
+            AlertDialog.Builder builder = new AlertDialog.Builder(self);
+            builder.setCancelable(false); // if you want user to wait for some process to finish,
+            builder.setView(R.layout.wait_for_camera_dialog);
+            waitForCameraDialog = builder.create(); // Show a dialog if not finished when stopped;
+            waitForCameraDialog.show();
         }
 
         @Override
         public void stopped() {
+            Log.d(TAG, "Discovery stopped");
         }
     };
 
@@ -253,8 +243,11 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
             runOnUiThread(() -> {
                 currentConnectionStatus = connectionStatus;
                 switch (connectionStatus) {
-                    case CONNECTING: break;
+                    case CONNECTING:
+                        break;
                     case CONNECTED: {
+                        stopDiscovery();
+                        waitForCameraDialog.dismiss();
                         cameraHandler.startStream(streamDataListener);
                     }
                     break;
@@ -285,6 +278,7 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
             runOnUiThread(() -> {
                 if (identity.cameraType == CameraType.FLIR_ONE) {
                     cameraHandler.add(identity);
+                    Log.d(TAG, "Status: "+currentConnectionStatus);
                     if (currentConnectionStatus != ConnectionStatus.CONNECTING && currentConnectionStatus != ConnectionStatus.CONNECTED)
                         connect(cameraHandler.getFlirOne());
                 }
@@ -307,19 +301,26 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
 
     private void setupViews() {
         msxImage = findViewById(R.id.msx_image);
-        startMeasurement = findViewById(R.id.start_measurement);
+        startMeasurementBtn = findViewById(R.id.start_measurement);
+        calibrateBtn = findViewById(R.id.calibrate);
     }
 
     public void changeMeasurementState(View view) {
-        if (startMeasurement.getText().toString().contains("Start")) {
+        if (startMeasurementBtn.getText().toString().contains("Start")) {
             if (currentConnectionStatus == ConnectionStatus.CONNECTED) {
-                startMeasurement.setText(getResources().getString(R.string.stop_measurement_text));
+                startMeasurementBtn.setText(getResources().getString(R.string.stop_measurement_text));
+                calibrateBtn.setEnabled(false);
                 tempDifferenceCalculator = new TempDifferenceCalculator(this);
             }
         } else {
-            startMeasurement.setText(getResources().getString(R.string.start_measurement_text));
+            startMeasurementBtn.setText(getResources().getString(R.string.start_measurement_text));
+            calibrateBtn.setEnabled(true);
             tempDifferenceCalculator.stop();
         }
+    }
+
+    public void recalibrateBoundingBox(View view) {
+        FaceDetector.recalculateDistances = true;
     }
 
     /**
