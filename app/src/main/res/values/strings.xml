@@ -11,4 +11,7 @@
     <string name="calibrate_text">Calibrate</string>
     <string name="waiting_for_camera">Waiting for camera…</string>
     <string name="try_replugging_the_camera">If the process takes too long try replugging the camera</string>
+    <string name="face_tracking_switch_text">Face tracking </string>
+    <string name="face_tracking_on">Face tracking</string>
+    <string name="face_tracking_off">All scene</string>
 </resources>

@@ -8,9 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -55,6 +53,8 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
     private Button startMeasurementBtn;
 
     private Button calibrateBtn;
+
+    private Switch faceTrackingSwitch;
 
     private TempDifferenceCalculator tempDifferenceCalculator;
 
@@ -320,6 +320,11 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
         msxImage = findViewById(R.id.msx_image);
         startMeasurementBtn = findViewById(R.id.start_measurement);
         calibrateBtn = findViewById(R.id.calibrate);
+        faceTrackingSwitch = findViewById(R.id.face_tracking_switch);
+        faceTrackingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (cameraHandler != null)
+                cameraHandler.isFaceTrackingOn = isChecked;
+        });
     }
 
     public void changeMeasurementState(View view) {
@@ -327,11 +332,13 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
             if (currentConnectionStatus == ConnectionStatus.CONNECTED) {
                 startMeasurementBtn.setText(getResources().getString(R.string.stop_measurement_text));
                 calibrateBtn.setEnabled(false);
+                faceTrackingSwitch.setEnabled(false);
                 tempDifferenceCalculator = new TempDifferenceCalculator(this);
             }
         } else {
             startMeasurementBtn.setText(getResources().getString(R.string.start_measurement_text));
             calibrateBtn.setEnabled(true);
+            faceTrackingSwitch.setEnabled(true);
             tempDifferenceCalculator.stop();
             tempDifferenceCalculator = null;
         }

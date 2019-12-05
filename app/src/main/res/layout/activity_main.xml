@@ -8,28 +8,42 @@
     <ImageView
             android:id="@+id/msx_image"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="617dp"
             android:minWidth="50dp"
             android:maxWidth="50dp"
             android:contentDescription="image with IR and visual data mixed"
-    />
+            android:layout_above="@+id/start_measurement"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_below="@+id/face_tracking_switch"/>
     <Button
             android:text="@string/start_measurement_text"
             android:onClick="changeMeasurementState"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/start_measurement"
-            android:layout_marginBottom="16dp"
-            android:layout_alignBottom="@+id/msx_image"
-            android:layout_marginStart="30dp"/>
+            android:layout_marginBottom="15dp"
+            android:layout_marginStart="15dp" android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"/>
     <Button
             android:text="@string/calibrate_text"
             android:onClick="recalibrateBoundingBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/calibrate"
-            android:layout_marginBottom="16dp"
-            android:layout_alignBottom="@+id/msx_image" android:layout_alignParentEnd="true"
-            android:layout_marginEnd="30dp"/>
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="15dp" android:layout_alignParentBottom="true"
+            android:layout_marginBottom="15dp"/>
+    <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/face_tracking_switch"
+            android:layout_centerHorizontal="true"
+            android:textOn="@string/face_tracking_on"
+            android:textOff="@string/face_tracking_off"
+            android:checked="true"
+            android:textStyle="bold"
+            android:showText="true"
+    />
 
 </RelativeLayout>

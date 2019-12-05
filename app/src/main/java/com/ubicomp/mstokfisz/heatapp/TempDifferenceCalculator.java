@@ -28,7 +28,6 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
     private double[] diffFreq; // Frequency of changes
     private int width = 0;
     private int height = 0;
-    private int bitmapWidth = 0;
     private int numberOfCalculationsPerformed = 0;
     private long elapsedTime;
     private static final String TAG = "TempDiffCalc";
@@ -48,22 +47,35 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
                 if (width == 0 || height == 0 || diffSum == null) { // for first measurement set everything
                     width = firstMeasurement.width;
                     height = firstMeasurement.height;
-                    bitmapWidth = firstMeasurement.bitmapWidth;
-                    diffSum = new double[firstMeasurement.pointsList.size()];
-                    diffFreq = new double[firstMeasurement.pointsList.size()];
+                    if (firstMeasurement.pointsList != null) {
+                        diffSum = new double[firstMeasurement.pointsList.size()];
+                        diffFreq = new double[firstMeasurement.pointsList.size()];
+                    } else {
+                        diffSum = new double[firstMeasurement.data.length];
+                        diffFreq = new double[firstMeasurement.data.length];
+                    }
                     Arrays.fill(diffSum, 0);
                     Arrays.fill(diffFreq, 0);
                 }
-                for (int i = 0; i < firstMeasurement.pointsList.size(); i++) { // Assume same size for now
-                    Integer firstPointNum = firstMeasurement.pointsList.get(i);
-                    Integer secondPointNum = secondMeasurement.pointsList.get(i);
-                    if (firstPointNum != null && secondPointNum != null) {
-                        diffSum[i] += Math.abs(secondMeasurement.data[secondPointNum] - firstMeasurement.data[firstPointNum]); // For now get the absolute value
-                        if (secondMeasurement.data[secondPointNum] != firstMeasurement.data[firstPointNum]) { // If the temp changed then add
+                if (firstMeasurement.pointsList != null) { // Face tracking mode
+                    for (int i = 0; i < firstMeasurement.pointsList.size(); i++) { // Assume same size for now
+                        Integer firstPointNum = firstMeasurement.pointsList.get(i);
+                        Integer secondPointNum = secondMeasurement.pointsList.get(i);
+                        if (firstPointNum != null && secondPointNum != null) {
+                            diffSum[i] += Math.abs(secondMeasurement.data[secondPointNum] - firstMeasurement.data[firstPointNum]); // For now get the absolute value
+                            if (secondMeasurement.data[secondPointNum] != firstMeasurement.data[firstPointNum]) { // If the temp changed then add
+                                diffFreq[i]++;
+                            }
+                        }
+//                    diffSum[i] += Math.abs((secondMeasurement.data[i] - secondMeasurement.minVal) - (firstMeasurement.data[i] - firstMeasurement.minVal)); // Alternative mode with subtracting minValues
+                    }
+                } else { // Grab whole scene
+                    for (int i = 0; i < firstMeasurement.data.length; i++) { // Assume same size for now
+                        diffSum[i] += Math.abs(secondMeasurement.data[i] - firstMeasurement.data[i]); // For now get the absolute value
+                        if (secondMeasurement.data[i] != firstMeasurement.data[i]) { // If the temp changed then add
                             diffFreq[i]++;
                         }
                     }
-//                    diffSum[i] += Math.abs((secondMeasurement.data[i] - secondMeasurement.minVal) - (firstMeasurement.data[i] - firstMeasurement.minVal)); // Alternative mode with subtracting minValues
                 }
 
             }
@@ -73,8 +85,8 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
             String formatedDate = sdf.format(new Date());
             Log.d(TAG, Arrays.toString(diffSum));
-            Bitmap diffSumHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height, bitmapWidth, null)));
-            Bitmap diffFreqHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffFreq, Arrays.stream(diffFreq).min().getAsDouble(), Arrays.stream(diffFreq).max().getAsDouble(), width, height, bitmapWidth, null)));
+            Bitmap diffSumHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffSum, Arrays.stream(diffSum).min().getAsDouble(), Arrays.stream(diffSum).max().getAsDouble(), width, height, null)));
+            Bitmap diffFreqHeatMap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(diffFreq, Arrays.stream(diffFreq).min().getAsDouble(), Arrays.stream(diffFreq).max().getAsDouble(), width, height, null)));
             String diffSumFileName = "DifferenceSum-" + formatedDate + ".png";
             String diffFreqFileName = "ChangeFrequency-" + formatedDate + ".png";
             File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "HeatApp");

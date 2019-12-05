@@ -59,7 +59,7 @@ class FaceDetector {
     private static final FirebaseVisionFaceDetectorOptions options =
             new FirebaseVisionFaceDetectorOptions.Builder()
                     .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
-                    .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
+                    .setContourMode(FirebaseVisionFaceDetectorOptions.NO_CONTOURS)
                     .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
                     .setClassificationMode(FirebaseVisionFaceDetectorOptions.NO_CLASSIFICATIONS)
                     .setMinFaceSize(0.3f)
@@ -118,7 +118,7 @@ class FaceDetector {
                                 pointsToCalculate = getAllPointsInRect(boundingBox, imgToDetect.getWidth());
                                 firstMeasurement = new FirstMeasurement(angle, middlePoint, pointsToCalculate, boundingBox.getWidth(), boundingBox.getHeight());
                             }
-                            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), firstMeasurement.width, firstMeasurement.height, imgToDetect.getWidth(), pointsToCalculate);
+                            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), firstMeasurement.width, firstMeasurement.height, pointsToCalculate);
                             TempDifferenceCalculator.newMeasurement(currentMeasurement);
                         }
                         // Draw boundingBox

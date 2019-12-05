@@ -25,6 +25,8 @@ import com.flir.thermalsdk.live.connectivity.ConnectionStatusListener;
 import com.flir.thermalsdk.live.discovery.DiscoveryEventListener;
 import com.flir.thermalsdk.live.discovery.DiscoveryFactory;
 import com.flir.thermalsdk.live.streaming.ThermalImageStreamListener;
+import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
+import org.greenrobot.eventbus.EventBus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -59,6 +61,7 @@ class CameraHandler {
 
     private static final String TAG = "CameraHandler";
     Boolean saveImages = false;
+    Boolean isFaceTrackingOn = true;
 
     private StreamDataListener streamDataListener;
 
@@ -217,15 +220,22 @@ class CameraHandler {
 
             double[] vals = thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()));
 //            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight());
-            if (!FaceDetector.isBusy) {
-                FaceDetector.detectFaces(dcBitmap, msxBitmap, vals);
+            if (isFaceTrackingOn) {
+                if (!FaceDetector.isBusy) {
+                    FaceDetector.detectFaces(dcBitmap, msxBitmap, vals);
+                }
+            } else {
+                EventBus.getDefault().post(new ImageReadyEvent(msxBitmap));
+                if (TempDifferenceCalculator.running) {
+                    TempDifferenceCalculator.newMeasurement(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null));
+                }
             }
             if (saveImages) {
                 saveFiles(dcBitmap, msxBitmap, vals);
             }
-            Log.d(TAG,"adding images to cache");
-            streamDataListener.images(msxBitmap, msxBitmap);
-            streamDataListener.images(msxBitmap, dcBitmap);
+//            Log.d(TAG,"adding images to cache");
+//            streamDataListener.images(msxBitmap, msxBitmap);
+//            streamDataListener.images(msxBitmap, dcBitmap);
         }
     };
 
@@ -233,7 +243,7 @@ class CameraHandler {
         saveImages = false;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
         String formatedDate = sdf.format(new Date());
-        Bitmap rawBitmap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(rawTempVals, Arrays.stream(rawTempVals).min().getAsDouble(), Arrays.stream(rawTempVals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), msxBitmap.getWidth(),null)));
+        Bitmap rawBitmap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(rawTempVals, Arrays.stream(rawTempVals).min().getAsDouble(), Arrays.stream(rawTempVals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null)));
         String rawFileName = "RAW-" + formatedDate + ".png";
         String msxFileName = "MSX-" + formatedDate + ".png";
         String dcFileName = "DC-" + formatedDate + ".png";
