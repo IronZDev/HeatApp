@@ -123,27 +123,41 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
     @Override
     protected void onStart() {
         super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+
+        super.onStop();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         Identity flir = cameraHandler.getFlirOne();
         if (flir != null) {
             connect(flir);
         } else {
-        startDiscovery();
+            startDiscovery();
         }
         EventBus.getDefault().register(this);
         setOrientationChangeListener(this);
     }
 
     @Override
-    protected void onStop() {
+    protected void onPause() {
         setOrientationChangeListener(null);
         EventBus.getDefault().unregister(this);
         stopDiscovery(); // Also stops stream
         disconnect();
-        super.onStop();
+        super.onPause();
     }
 
     @Override
     protected void onDestroy() {
+        if (tempDifferenceCalculator != null && TempDifferenceCalculator.running) { // Not working
+            TempDifferenceCalculator.running = false;
+        }
         super.onDestroy();
     }
 
@@ -247,12 +261,15 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
                         break;
                     case CONNECTED: {
                         stopDiscovery();
+                        FaceDetector.resetFaceDetector();
                         waitForCameraDialog.dismiss();
                         cameraHandler.startStream(streamDataListener);
                     }
                     break;
                     case DISCONNECTING: break;
-                    case DISCONNECTED: break;
+                    case DISCONNECTED:
+                        FaceDetector.resetFaceDetector();
+                        break;
                 }
             });
         }
@@ -316,10 +333,12 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
             startMeasurementBtn.setText(getResources().getString(R.string.start_measurement_text));
             calibrateBtn.setEnabled(true);
             tempDifferenceCalculator.stop();
+            tempDifferenceCalculator = null;
         }
     }
 
     public void recalibrateBoundingBox(View view) {
+//        cameraHandler.saveImages = true; // For saving camera screenshots
         FaceDetector.recalculateDistances = true;
     }
 

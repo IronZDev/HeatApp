@@ -2,9 +2,13 @@ package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.util.Log;
 
 final class HeatMapGenerator {
+    private final static String TAG = "HatMapGenerator";
+
     static Bitmap generateHeatMap(MeasurementDataHolder measurement) {
+        Log.d(TAG, "Height: "+measurement.height + "Width: "+measurement.width);
         int[] mappedData = new int[measurement.data.length];
         Bitmap bmp = Bitmap.createBitmap(measurement.width, measurement.height, Bitmap.Config.ARGB_8888);
         for (int i = 0; i < measurement.data.length; i++) {

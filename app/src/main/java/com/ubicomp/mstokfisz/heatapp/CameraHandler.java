@@ -10,7 +10,9 @@
 package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
-import android.graphics.Rect;
+import android.icu.text.SimpleDateFormat;
+import android.media.MediaScannerConnection;
+import android.os.Environment;
 import android.util.Log;
 import com.flir.thermalsdk.androidsdk.image.BitmapAndroid;
 import com.flir.thermalsdk.image.Rectangle;
@@ -25,11 +27,12 @@ import com.flir.thermalsdk.live.discovery.DiscoveryFactory;
 import com.flir.thermalsdk.live.streaming.ThermalImageStreamListener;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.*;
 
+import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
 import static com.ubicomp.mstokfisz.heatapp.RotationHandler.zoomBitmap;
 
 /**
@@ -55,6 +58,7 @@ import static com.ubicomp.mstokfisz.heatapp.RotationHandler.zoomBitmap;
 class CameraHandler {
 
     private static final String TAG = "CameraHandler";
+    Boolean saveImages = false;
 
     private StreamDataListener streamDataListener;
 
@@ -212,19 +216,49 @@ class CameraHandler {
             // Generate face detection
 
             double[] vals = thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()));
-            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight());
+//            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight());
             if (!FaceDetector.isBusy) {
-                FaceDetector.detectFaces(dcBitmap, msxBitmap, currentMeasurement);
+                FaceDetector.detectFaces(dcBitmap, msxBitmap, vals);
             }
-
-            if (TempDifferenceCalculator.running) {
-                TempDifferenceCalculator.newMeasurement(currentMeasurement);
+            if (saveImages) {
+                saveFiles(dcBitmap, msxBitmap, vals);
             }
             Log.d(TAG,"adding images to cache");
             streamDataListener.images(msxBitmap, msxBitmap);
             streamDataListener.images(msxBitmap, dcBitmap);
         }
     };
+
+    private void saveFiles(Bitmap dcBitmap, Bitmap msxBitmap, double[] rawTempVals) {
+        saveImages = false;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
+        String formatedDate = sdf.format(new Date());
+        Bitmap rawBitmap = rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(rawTempVals, Arrays.stream(rawTempVals).min().getAsDouble(), Arrays.stream(rawTempVals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), msxBitmap.getWidth(),null)));
+        String rawFileName = "RAW-" + formatedDate + ".png";
+        String msxFileName = "MSX-" + formatedDate + ".png";
+        String dcFileName = "DC-" + formatedDate + ".png";
+        File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "HeatApp");
+        if(!dir.exists())
+            dir.mkdirs();
+        File rawFile = new File(dir,rawFileName);
+        File msxFile = new File(dir, msxFileName);
+        File dcFile = new File(dir, dcFileName);
+        FileOutputStream fOut;
+        try {
+            fOut = new FileOutputStream(rawFile);
+            rawBitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            fOut = new FileOutputStream(msxFile);
+            msxBitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            fOut = new FileOutputStream(dcFile);
+            dcBitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            fOut.flush();
+            fOut.close();
+        } catch (IOException e) {
+            Log.d(TAG, "File not saved");
+            Log.e(TAG, Objects.requireNonNull(e.getMessage()));
+        }
+
+    }
 
 
 }

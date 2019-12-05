@@ -12,6 +12,8 @@ import com.google.firebase.ml.vision.face.*;
 import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
 import org.greenrobot.eventbus.EventBus;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
@@ -21,13 +23,37 @@ class FaceDetector {
         private float distanceLeft;
         private float distanceRight;
         private float distanceUp;
-        private float disanceDown;
+        private float distanceDown;
     }
     static class Rectangle {
         private FirebaseVisionPoint leftUp;
         private FirebaseVisionPoint rightUp;
         private FirebaseVisionPoint rightDown;
         private FirebaseVisionPoint leftDown;
+
+        int getHeight () {
+            return Math.abs(Math.round(leftDown.getY() - leftUp.getY()));
+        }
+
+        int getWidth () {
+            return Math.abs(Math.round(rightDown.getX() - leftDown.getX()));
+        }
+    }
+
+    static class FirstMeasurement {
+        private final float angle;
+        private final FirebaseVisionPoint middlePoint;
+        private final ArrayList<Integer> pointsList;
+        private final int width;
+        private final int height;
+
+        public FirstMeasurement(float angle, FirebaseVisionPoint middlePoint, ArrayList<Integer> pointsList, int width, int height) {
+            this.angle = angle;
+            this.middlePoint = middlePoint;
+            this.pointsList = pointsList;
+            this.width = width;
+            this.height = height;
+        }
     }
 
     private static final FirebaseVisionFaceDetectorOptions options =
@@ -45,8 +71,9 @@ class FaceDetector {
     static Boolean isBusy = false;
     private static DistanceContainer distanceContainer;
     static Boolean recalculateDistances = false;
+    private static FirstMeasurement firstMeasurement = null;
 
-    static void detectFaces(Bitmap bmpImage, Bitmap msxImage, MeasurementDataHolder currentData) {
+    static void detectFaces(Bitmap bmpImage, Bitmap msxImage, double[] vals) {
         isBusy = true;
         Bitmap imgToDetect;
         Bitmap imgToDraw;
@@ -63,23 +90,12 @@ class FaceDetector {
                 Bitmap mutableBitmap = imgToDraw.copy(Bitmap.Config.ARGB_8888, true);
                 Canvas canvas = new Canvas(mutableBitmap);
                 for (FirebaseVisionFace face : firebaseVisionFaces) {
-//                    RectF contourBounds = new RectF();
-//                    FirebaseVisionFaceContour contour = face.getContour(FirebaseVisionFaceContour.FACE);
-//                    Path path = new Path();
-//                    path.moveTo(contour.getPoints().get(0).getX(), contour.getPoints().get(0).getY());
-//                    contour.getPoints().forEach(point -> {
-//                        path.lineTo(point.getX(), point.getY());
-//                    });
-//                    path.close();
-//                    path.computeBounds(contourBounds, false);
                     FirebaseVisionFaceLandmark leftEye = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EYE);
                     FirebaseVisionFaceLandmark rightEye = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EYE);
 
                     Paint paint = new Paint();
                     paint.setStyle(Paint.Style.STROKE);
                     paint.setStrokeWidth(8.0f);
-//                    boundingRect = face.getBoundingBox();
-//                    canvas.drawRect(contourBounds, paint);
                     paint.setColor(Color.GREEN);
                     if (leftEye != null && rightEye != null) {
                         canvas.drawPoint(leftEye.getPosition().getX(), leftEye.getPosition().getY(), paint);
@@ -89,9 +105,22 @@ class FaceDetector {
                             recalculateDistances = false;
                         }
                         FirebaseVisionPoint middlePoint = calculateMiddlePoint(leftEye.getPosition(), rightEye.getPosition());
-                        double angle = -Math.atan2(leftEye.getPosition().getX()-rightEye.getPosition().getX(), leftEye.getPosition().getY() - rightEye.getPosition().getY());
+                        // Calculate angle of head rotation
+                        float angle = (float) Math.atan2(rightEye.getPosition().getY() - leftEye.getPosition().getY(), rightEye.getPosition().getX()-leftEye.getPosition().getX());
                         Rectangle boundingBox = calculateBoundingBox(middlePoint);
-                        boundingBox = rotateBoundingBox(boundingBox, (float) angle, middlePoint);
+                        ArrayList<Integer> pointsToCalculate;
+                        if (TempDifferenceCalculator.running) {
+                            if (firstMeasurement != null) {
+                                float angleToFirstMeasurement = angle - firstMeasurement.angle;
+                                pointsToCalculate = getNewPointsInRect(angleToFirstMeasurement, middlePoint, imgToDetect.getWidth(), imgToDetect.getHeight());
+                                boundingBox = rotateBoundingBox(boundingBox, angleToFirstMeasurement, middlePoint);
+                            } else {
+                                pointsToCalculate = getAllPointsInRect(boundingBox, imgToDetect.getWidth());
+                                firstMeasurement = new FirstMeasurement(angle, middlePoint, pointsToCalculate, boundingBox.getWidth(), boundingBox.getHeight());
+                            }
+                            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), firstMeasurement.width, firstMeasurement.height, imgToDetect.getWidth(), pointsToCalculate);
+                            TempDifferenceCalculator.newMeasurement(currentMeasurement);
+                        }
                         // Draw boundingBox
                         Path path = new Path();
                         path.moveTo(boundingBox.leftUp.getX(), boundingBox.leftUp.getY());
@@ -103,7 +132,6 @@ class FaceDetector {
                         paint.setColor(Color.RED);
                         canvas.drawPath(path, paint);
                         canvas.drawPoint(middlePoint.getX(), middlePoint.getY(), paint);
-
                         EventBus.getDefault().post(new ImageReadyEvent(mutableBitmap));
                         isBusy = false;
                         return;
@@ -125,7 +153,7 @@ class FaceDetector {
     private static void calculateDistances(FirebaseVisionPoint leftEye, FirebaseVisionPoint rightEye, Rect boundingRect) {
         FirebaseVisionPoint betweenEyes = calculateMiddlePoint(leftEye, rightEye);
         DistanceContainer distContainer = new DistanceContainer();
-        distContainer.disanceDown = boundingRect.bottom - betweenEyes.getY();
+        distContainer.distanceDown = boundingRect.bottom - betweenEyes.getY();
         distContainer.distanceUp  = boundingRect.top - betweenEyes.getY();
         distContainer.distanceRight = boundingRect.right - betweenEyes.getX();
         distContainer.distanceLeft = boundingRect.left - betweenEyes.getX();
@@ -161,7 +189,7 @@ class FaceDetector {
         float leftBound = middlePoint.getX() + distanceContainer.distanceLeft;
         float rightBound = middlePoint.getX() + distanceContainer.distanceRight;
         float upperBound = middlePoint.getY() + distanceContainer.distanceUp;
-        float lowerBound = middlePoint.getY() + distanceContainer.disanceDown;
+        float lowerBound = middlePoint.getY() + distanceContainer.distanceDown;
         rect.leftUp = new FirebaseVisionPoint(leftBound, upperBound, 0f);
         rect.leftDown = new FirebaseVisionPoint(leftBound, lowerBound, 0f);
         rect.rightDown = new FirebaseVisionPoint(rightBound, lowerBound, 0f);
@@ -176,5 +204,57 @@ class FaceDetector {
         rotatedRect.leftDown = rotatePoint(middlePoint, rect.leftDown, angle);
         rotatedRect.leftUp = rotatePoint(middlePoint, rect.leftUp, angle);
         return rotatedRect;
+    }
+
+    static void resetFaceDetector() {
+        isBusy = false;
+        distanceContainer = null;
+        recalculateDistances = false;
+        firstMeasurement = null;
+    }
+
+    // To do: Cancel measurement if boundary is not entirely in Bitmap
+    static ArrayList<Integer> getAllPointsInRect(Rectangle rect, int width) {
+        ArrayList<Integer> points = new ArrayList<>();
+        for (int y = Math.round(rect.leftUp.getY()); y < Math.round(rect.leftUp.getY()) + rect.getHeight(); y++) {
+            for (int x = Math.round(rect.leftDown.getX()); x < Math.round(rect.leftDown.getX()) + rect.getWidth(); x++) {
+                points.add(get1D(x, y, width)); // Calculate pixel number
+            }
+        }
+        return points;
+    }
+
+    static ArrayList<Integer> getNewPointsInRect(float newAngle, FirebaseVisionPoint newMiddlePoint, int bitmapWidth, int bitmapHeight) {
+        ArrayList<Integer> newPoints = new ArrayList<>();
+        float yOffset = newMiddlePoint.getY() - firstMeasurement.middlePoint.getY();
+        float xOffset = newMiddlePoint.getX() - firstMeasurement.middlePoint.getX();
+        for (int point : firstMeasurement.pointsList) {
+            FirebaseVisionPoint translatedPoint = new FirebaseVisionPoint(get2DX(point, bitmapWidth) + xOffset, get2DY(point, bitmapWidth) + yOffset, 0f);
+            FirebaseVisionPoint rotatedPoint = rotatePoint(newMiddlePoint, translatedPoint, newAngle);
+            if (checkIfPointInBitmap(rotatedPoint, bitmapWidth, bitmapHeight)) {
+                newPoints.add(get1D(Math.round(rotatedPoint.getX()), Math.round(rotatedPoint.getY()), bitmapWidth));
+            } else {
+                newPoints.add(null); // Null if out of bounds
+            }
+        }
+        return newPoints;
+    }
+
+    private static Boolean checkIfPointInBitmap (FirebaseVisionPoint point, int bitmapWidth, int bitmapHeight){
+        int roundedX = Math.round(point.getX());
+        int roundedY = Math.round(point.getY());
+        return roundedX >= 0 && roundedY >= 0 && roundedY <= bitmapHeight - 1 && roundedX <= bitmapWidth - 1;
+    }
+
+    private static int get2DX(int num, int width) {
+        return num - ((num / width) * width);
+    }
+
+    private static int get2DY(int num, int width) {
+        return num /  width;
+    }
+
+    private static int get1D(int x, int y, int width) {
+        return y * width + x;
     }
 }
