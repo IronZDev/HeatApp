@@ -225,7 +225,7 @@ class CameraHandler {
                     FaceDetector.detectFaces(dcBitmap, msxBitmap, vals);
                 }
             } else {
-                EventBus.getDefault().post(new ImageReadyEvent(msxBitmap));
+                EventBus.getDefault().post(new ImageReadyEvent(RotationHandler.rotateBitmap(msxBitmap)));
                 if (TempDifferenceCalculator.running) {
                     TempDifferenceCalculator.newMeasurement(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null));
                 }
