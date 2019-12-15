@@ -26,6 +26,7 @@ import com.flir.thermalsdk.live.discovery.DiscoveryEventListener;
 import com.flir.thermalsdk.live.discovery.DiscoveryFactory;
 import com.flir.thermalsdk.live.streaming.ThermalImageStreamListener;
 import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
+import com.ubicomp.mstokfisz.heatapp.events.MeasurementReadyEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.jetbrains.annotations.Nullable;
 
@@ -227,7 +228,8 @@ class CameraHandler {
             } else {
                 EventBus.getDefault().post(new ImageReadyEvent(RotationHandler.rotateBitmap(msxBitmap)));
                 if (TempDifferenceCalculator.running) {
-                    TempDifferenceCalculator.newMeasurement(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null));
+                    EventBus.getDefault().post(new MeasurementReadyEvent(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null)));
+//                    TempDifferenceCalculator.newMeasurement(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null));
                 }
             }
             if (saveImages) {

@@ -324,6 +324,11 @@ public class MainActivity extends SensorPortraitActivity implements SensorPortra
         faceTrackingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (cameraHandler != null)
                 cameraHandler.isFaceTrackingOn = isChecked;
+            if (isChecked) {
+                calibrateBtn.setEnabled(true);
+            } else {
+                calibrateBtn.setEnabled(false);
+            }
         });
     }
 

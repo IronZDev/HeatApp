@@ -10,6 +10,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.common.FirebaseVisionPoint;
 import com.google.firebase.ml.vision.face.*;
 import com.ubicomp.mstokfisz.heatapp.events.ImageReadyEvent;
+import com.ubicomp.mstokfisz.heatapp.events.MeasurementReadyEvent;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
@@ -119,7 +120,8 @@ class FaceDetector {
                                 firstMeasurement = new FirstMeasurement(angle, middlePoint, pointsToCalculate, boundingBox.getWidth(), boundingBox.getHeight());
                             }
                             MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), firstMeasurement.width, firstMeasurement.height, pointsToCalculate);
-                            TempDifferenceCalculator.newMeasurement(currentMeasurement);
+                            EventBus.getDefault().post(new MeasurementReadyEvent((currentMeasurement)));
+//                            TempDifferenceCalculator.newMeasurement(currentMeasurement);
                         }
                         // Draw boundingBox
                         Path path = new Path();
