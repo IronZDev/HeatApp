@@ -9,11 +9,10 @@ final class HeatMapGenerator {
 
     static Bitmap generateHeatMap(MeasurementDataHolder measurement) {
         Log.d(TAG, "Height: "+measurement.height + "Width: "+measurement.width);
-        int[] mappedData = new int[measurement.data.length];
         Bitmap bmp = Bitmap.createBitmap(measurement.width, measurement.height, Bitmap.Config.ARGB_8888);
-        for (int i = 0; i < measurement.data.length; i++) {
-            mappedData[i] = mapValueToColor(measurement.data[i], measurement.minVal, measurement.maxVal);
-            bmp.setPixel(calculateX(i, measurement.width), calculateY(i, measurement.width), Color.rgb(mappedData[i], mappedData[i], mappedData[i]));
+        for (int pixelNumber = 0; pixelNumber < measurement.data.length; pixelNumber++) {
+            int calculatedValue = mapValueToColor(measurement.data[pixelNumber], measurement.minVal, measurement.maxVal);
+            bmp.setPixel(calculateX(pixelNumber, measurement.width), calculateY(pixelNumber, measurement.width), Color.rgb(calculatedValue, calculatedValue, calculatedValue));
         }
         return bmp;
     }

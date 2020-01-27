@@ -101,11 +101,11 @@ class FaceDetector {
                     if (leftEye != null && rightEye != null) {
                         canvas.drawPoint(leftEye.getPosition().getX(), leftEye.getPosition().getY(), paint);
                         canvas.drawPoint(rightEye.getPosition().getX(), rightEye.getPosition().getY(), paint);
+                        FirebaseVisionPoint middlePoint = calculateMiddlePoint(leftEye.getPosition(), rightEye.getPosition());
                         if (distanceContainer == null || recalculateDistances) {
-                            calculateDistances(leftEye.getPosition(), rightEye.getPosition(), face.getBoundingBox());
+                            calculateDistances(middlePoint, face.getBoundingBox());
                             recalculateDistances = false;
                         }
-                        FirebaseVisionPoint middlePoint = calculateMiddlePoint(leftEye.getPosition(), rightEye.getPosition());
                         // Calculate angle of head rotation
                         float angle = (float) Math.atan2(rightEye.getPosition().getY() - leftEye.getPosition().getY(), rightEye.getPosition().getX()-leftEye.getPosition().getX());
                         Rectangle boundingBox = calculateBoundingBox(middlePoint);
@@ -152,13 +152,12 @@ class FaceDetector {
         });;
     }
 
-    private static void calculateDistances(FirebaseVisionPoint leftEye, FirebaseVisionPoint rightEye, Rect boundingRect) {
-        FirebaseVisionPoint betweenEyes = calculateMiddlePoint(leftEye, rightEye);
+    private static void calculateDistances(FirebaseVisionPoint middlePoint, Rect boundingRect) {
         DistanceContainer distContainer = new DistanceContainer();
-        distContainer.distanceDown = boundingRect.bottom - betweenEyes.getY();
-        distContainer.distanceUp  = boundingRect.top - betweenEyes.getY();
-        distContainer.distanceRight = boundingRect.right - betweenEyes.getX();
-        distContainer.distanceLeft = boundingRect.left - betweenEyes.getX();
+        distContainer.distanceDown = boundingRect.bottom - middlePoint.getY();
+        distContainer.distanceUp  = boundingRect.top - middlePoint.getY();
+        distContainer.distanceRight = boundingRect.right - middlePoint.getX();
+        distContainer.distanceLeft = boundingRect.left - middlePoint.getX();
         FaceDetector.distanceContainer = distContainer;
     }
 

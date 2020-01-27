@@ -1,17 +1,7 @@
-/*******************************************************************
- * @title FLIR THERMAL SDK
- * @file CameraHandler.java
- * @Author FLIR Systems AB
- *
- * @brief Helper class that encapsulates *most* interactions with a FLIR ONE camera
- *
- * Copyright 2019:    FLIR Systems
- ********************************************************************/
 package com.ubicomp.mstokfisz.heatapp;
 
 import android.graphics.Bitmap;
 import android.icu.text.SimpleDateFormat;
-import android.media.MediaScannerConnection;
 import android.os.Environment;
 import android.util.Log;
 import com.flir.thermalsdk.androidsdk.image.BitmapAndroid;
@@ -36,44 +26,21 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
-import static com.ubicomp.mstokfisz.heatapp.RotationHandler.zoomBitmap;
 
-/**
- * Encapsulates the handling of a FLIR ONE camera or built in emulator, discovery, connecting and start receiving images.
- * All listeners are called from Thermal SDK on a non-ui thread
- * <p/>
- * Usage:
- * <pre>
- * Start discovery of FLIR FLIR ONE cameras or built in FLIR ONE cameras emulators
- * {@linkplain #startDiscovery(DiscoveryEventListener, DiscoveryStatus)}
- * Use a discovered Camera {@linkplain Identity} and connect to the Camera
- * {@linkplain #connect(Identity, ConnectionStatusListener)}
- * Once connected to a camera
- * {@linkplain #startStream(StreamDataListener)}
- * </pre>
- * <p/>
- * You don't *have* to specify your application to listen or USB intents but it might be beneficial for you application,
- * we are enumerating the USB devices during the discovery process which eliminates the need to listen for USB intents.
- * See the Android documentation about USB Host mode for more information
- * <p/>
- * Please note, this is <b>NOT</b> production quality code, error handling has been kept to a minimum to keep the code as clear and concise as possible
- */
 class CameraHandler {
 
     private static final String TAG = "CameraHandler";
     Boolean saveImages = false;
     Boolean isFaceTrackingOn = true;
 
-    private StreamDataListener streamDataListener;
-
     public interface StreamDataListener {
         void images(Bitmap msxBitmap, Bitmap dcBitmap);
     }
 
-    //Discovered FLIR cameras
+    // Discovered FLIR cameras
     LinkedList<Identity> foundCameraIdentities = new LinkedList<>();
 
-    //A FLIR Camera
+    // A FLIR Camera
     private Camera camera;
 
 
@@ -120,7 +87,6 @@ class CameraHandler {
      * Start a stream of {@link ThermalImage}s images from a FLIR ONE or emulator
      */
     public void startStream(StreamDataListener listener) {
-        this.streamDataListener = listener;
         camera.subscribeStream(thermalImageStreamListener);
     }
 
@@ -229,7 +195,6 @@ class CameraHandler {
                 EventBus.getDefault().post(new ImageReadyEvent(RotationHandler.rotateBitmap(msxBitmap)));
                 if (TempDifferenceCalculator.running) {
                     EventBus.getDefault().post(new MeasurementReadyEvent(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null)));
-//                    TempDifferenceCalculator.newMeasurement(new MeasurementDataHolder(vals, Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight(), null));
                 }
             }
             if (saveImages) {

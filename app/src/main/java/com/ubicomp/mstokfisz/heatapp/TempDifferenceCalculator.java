@@ -19,7 +19,6 @@ import org.greenrobot.eventbus.Subscribe;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
@@ -68,11 +67,8 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
             if (measurementsQueue != null && measurementsQueue.size() >= 2) { // If there are two frames ready
                 MeasurementDataHolder firstMeasurement = measurementsQueue.removeFirst(); // Get first measurement and delete from queue
                 MeasurementDataHolder secondMeasurement = measurementsQueue.getFirst(); // Get second (now first) but do not delete from queue
-                if(this.firstMeasurement== null) {
+                if(this.firstMeasurement == null) {
                     this.firstMeasurement = firstMeasurement;
-                }
-                numberOfCalculationsPerformed++;
-                if (width == 0 || height == 0 || resultsEach2 == null) { // for first measurement set everything
                     width = firstMeasurement.width;
                     height = firstMeasurement.height;
                     resultsEach2 = new ResultHolder(firstMeasurement);
@@ -80,11 +76,12 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
                     resultsEach5 = new ResultHolder(firstMeasurement);
                     resultsEach10 = new ResultHolder(firstMeasurement);
                 }
+                numberOfCalculationsPerformed++;
                 compareTwoMeasurements(firstMeasurement, secondMeasurement, resultsEach2);
-                if (numberOfCalculationsPerformed / 3 == 0) {
+                if (numberOfCalculationsPerformed % 3 == 0) {
                     compareTwoMeasurements(firstMeasurement, secondMeasurement, resultsEach3);
                 }
-                if (numberOfCalculationsPerformed / 5 == 0) {
+                if (numberOfCalculationsPerformed % 5 == 0) {
                     compareTwoMeasurements(firstMeasurement, secondMeasurement, resultsEach5);
                     ResultHolder tempHolder = new ResultHolder(this.firstMeasurement);
                     compareTwoMeasurements(this.firstMeasurement, secondMeasurement, tempHolder);
@@ -97,7 +94,7 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
                             photosCreated+".png",
                             "dynamicDiffSum"+date);
                 }
-                if (numberOfCalculationsPerformed / 10 == 0) {
+                if (numberOfCalculationsPerformed % 10 == 0) {
                     compareTwoMeasurements(firstMeasurement, secondMeasurement, resultsEach10);
                 }
             }
@@ -127,22 +124,22 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
 
     private void compareTwoMeasurements(MeasurementDataHolder firstMeasurement, MeasurementDataHolder secondMeasurement, ResultHolder resHolder) {
         if (firstMeasurement.pointsList != null) { // Face tracking mode
-            for (int i = 0; i < firstMeasurement.pointsList.size(); i++) { // Assume same size for now
-                Integer firstPointNum = firstMeasurement.pointsList.get(i);
-                Integer secondPointNum = secondMeasurement.pointsList.get(i);
+            for (int pointNum = 0; pointNum < firstMeasurement.pointsList.size(); pointNum++) { // Assume same size for now
+                Integer firstPointNum = firstMeasurement.pointsList.get(pointNum);
+                Integer secondPointNum = secondMeasurement.pointsList.get(pointNum);
                 if (firstPointNum != null && secondPointNum != null) {
-                    resHolder.diffSum[i] += Math.abs(secondMeasurement.data[secondPointNum] - firstMeasurement.data[firstPointNum]); // For now get the absolute value
+                    resHolder.diffSum[pointNum] += Math.abs(secondMeasurement.data[secondPointNum] - firstMeasurement.data[firstPointNum]); // For now get the absolute value
                     if (secondMeasurement.data[secondPointNum] != firstMeasurement.data[firstPointNum]) { // If the temp changed then add
-                        resHolder.diffFreq[i]++;
+                        resHolder.diffFreq[pointNum]++;
                     }
                 }
 //                    diffSum[i] += Math.abs((secondMeasurement.data[i] - secondMeasurement.minVal) - (firstMeasurement.data[i] - firstMeasurement.minVal)); // Alternative mode with subtracting minValues
             }
         } else { // Grab whole scene
-            for (int i = 0; i < firstMeasurement.data.length; i++) { // Assume same size for now
-                resHolder.diffSum[i] += Math.abs(secondMeasurement.data[i] - firstMeasurement.data[i]); // For now get the absolute value
-                if (secondMeasurement.data[i] != firstMeasurement.data[i]) { // If the temp changed then add
-                    resHolder.diffFreq[i]++;
+            for (int pointNum = 0; pointNum < firstMeasurement.data.length; pointNum++) { // Assume same size for now
+                resHolder.diffSum[pointNum] += Math.abs(secondMeasurement.data[pointNum] - firstMeasurement.data[pointNum]); // For now get the absolute value
+                if (secondMeasurement.data[pointNum] != firstMeasurement.data[pointNum]) { // If the temp changed then add
+                    resHolder.diffFreq[pointNum]++;
                 }
             }
         }
@@ -199,10 +196,6 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
         measurementsQueue.add(event.measurementDataHolder);
     }
 
-//    static void newMeasurement(MeasurementDataHolder measurement) {
-//        measurementsQueue.add(measurement);
-//    }
-
     @SuppressLint("DefaultLocale")
     private static String parseNanoSeconds(Long nanos){
         DecimalFormat df = new DecimalFormat("00");
@@ -214,7 +207,6 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
     }
 
     private void saveBitmap(Bitmap bmp, String fileName, String folderName) {
-
         File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "HeatApp" + File.separator + folderName);
         if (!dir.exists())
             dir.mkdirs();
