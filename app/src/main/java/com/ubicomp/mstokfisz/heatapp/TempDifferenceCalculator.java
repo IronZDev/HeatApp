@@ -90,7 +90,7 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
                         date = sdf.format(new Date());
                     }
                     photosCreated++;
-                    saveBitmap(rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(tempHolder.diffSum, Arrays.stream(tempHolder.diffSum).min().getAsDouble(), Arrays.stream(tempHolder.diffSum).max().getAsDouble(), width, height, null))),
+                    saveBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(tempHolder.diffSum, Arrays.stream(tempHolder.diffSum).min().getAsDouble(), Arrays.stream(tempHolder.diffSum).max().getAsDouble(), width, height, null)),
                             photosCreated+".png",
                             "dynamicDiffSum"+date);
                 }
@@ -103,19 +103,19 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
             elapsedTime = System.nanoTime() - startTime;
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ssZ", Locale.getDefault());
             String formatedDate = sdf.format(new Date());
-            saveBitmap(rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach2.diffSum, Arrays.stream(resultsEach2.diffSum).min().getAsDouble(), Arrays.stream(resultsEach2.diffSum).max().getAsDouble(), width, height, null))),
+            saveBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach2.diffSum, Arrays.stream(resultsEach2.diffSum).min().getAsDouble(), Arrays.stream(resultsEach2.diffSum).max().getAsDouble(), width, height, null)),
                     "DifferenceSumEach2.png",
                     formatedDate);
-            saveBitmap(rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach2.diffFreq, Arrays.stream(resultsEach2.diffFreq).min().getAsDouble(), Arrays.stream(resultsEach2.diffFreq).max().getAsDouble(), width, height, null))),
+            saveBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach2.diffFreq, Arrays.stream(resultsEach2.diffFreq).min().getAsDouble(), Arrays.stream(resultsEach2.diffFreq).max().getAsDouble(), width, height, null)),
                     "ChangeFrequency.png",
                     formatedDate);
-            saveBitmap(rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach3.diffSum, Arrays.stream(resultsEach3.diffSum).min().getAsDouble(), Arrays.stream(resultsEach3.diffSum).max().getAsDouble(), width, height, null))),
+            saveBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach3.diffSum, Arrays.stream(resultsEach3.diffSum).min().getAsDouble(), Arrays.stream(resultsEach3.diffSum).max().getAsDouble(), width, height, null)),
                     "DifferenceSumEach3.png",
                     formatedDate);
-            saveBitmap(rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach5.diffSum, Arrays.stream(resultsEach5.diffSum).min().getAsDouble(), Arrays.stream(resultsEach5.diffSum).max().getAsDouble(), width, height, null))),
+            saveBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach5.diffSum, Arrays.stream(resultsEach5.diffSum).min().getAsDouble(), Arrays.stream(resultsEach5.diffSum).max().getAsDouble(), width, height, null)),
                     "DifferenceSumEach5.png",
                     formatedDate);
-            saveBitmap(rotateBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach10.diffSum, Arrays.stream(resultsEach10.diffSum).min().getAsDouble(), Arrays.stream(resultsEach10.diffSum).max().getAsDouble(), width, height, null))),
+            saveBitmap(HeatMapGenerator.generateHeatMap(new MeasurementDataHolder(resultsEach10.diffSum, Arrays.stream(resultsEach10.diffSum).min().getAsDouble(), Arrays.stream(resultsEach10.diffSum).max().getAsDouble(), width, height, null)),
                     "DifferenceSumEach10.png",
                     formatedDate);
         }

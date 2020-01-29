@@ -15,6 +15,7 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
@@ -81,6 +82,9 @@ class FaceDetector {
 
         imgToDetect = rotateBitmap(msxImage);
         imgToDraw = rotateBitmap(msxImage);
+        if (RotationHandler.isRotated) { // Reverse array to matched rotated image
+            reverseArray(vals);
+        }
         // Detect in image
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(imgToDetect);
 
@@ -109,7 +113,7 @@ class FaceDetector {
                         // Calculate angle of head rotation
                         float angle = (float) Math.atan2(rightEye.getPosition().getY() - leftEye.getPosition().getY(), rightEye.getPosition().getX()-leftEye.getPosition().getX());
                         Rectangle boundingBox = calculateBoundingBox(middlePoint);
-                        ArrayList<Integer> pointsToCalculate;
+                        ArrayList<Integer> pointsToCalculate = null;
                         if (TempDifferenceCalculator.running) {
                             if (firstMeasurement != null) {
                                 float angleToFirstMeasurement = angle - firstMeasurement.angle;
@@ -134,6 +138,12 @@ class FaceDetector {
                         paint.setColor(Color.RED);
                         canvas.drawPath(path, paint);
                         canvas.drawPoint(middlePoint.getX(), middlePoint.getY(), paint);
+//                        // Draw points inside rect
+//                        if (pointsToCalculate != null && firstMeasurement != null) {
+//                            for (Integer point : pointsToCalculate) {
+//                                canvas.drawPoint(get2DX(point, imgToDetect.getWidth()), get2DY(point, imgToDetect.getWidth()), paint);
+//                            }
+//                        }
                         EventBus.getDefault().post(new ImageReadyEvent(mutableBitmap));
                         isBusy = false;
                         return;
@@ -257,5 +267,14 @@ class FaceDetector {
 
     private static int get1D(int x, int y, int width) {
         return y * width + x;
+    }
+
+    private static void reverseArray(double[] arr) {
+        for(int i = 0; i < arr.length / 2; i++)
+        {
+            double temp = arr[i];
+            arr[i] = arr[arr.length - i - 1];
+            arr[arr.length - i - 1] = temp;
+        }
     }
 }
