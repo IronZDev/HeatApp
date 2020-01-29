@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static com.ubicomp.mstokfisz.heatapp.RotationHandler.reverseArray;
 import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
 
 class CameraHandler {
@@ -186,6 +187,9 @@ class CameraHandler {
             // Generate face detection
 
             double[] vals = thermalImage.getValues(new Rectangle(0, 0, msxBitmap.getWidth(), msxBitmap.getHeight()));
+            if (RotationHandler.isRotated) { // Reverse array to matched rotated image
+                reverseArray(vals);
+            }
 //            MeasurementDataHolder currentMeasurement = new MeasurementDataHolder(vals,  Arrays.stream(vals).min().getAsDouble(), Arrays.stream(vals).max().getAsDouble(), msxBitmap.getWidth(), msxBitmap.getHeight());
             if (isFaceTrackingOn) {
                 if (!FaceDetector.isBusy) {

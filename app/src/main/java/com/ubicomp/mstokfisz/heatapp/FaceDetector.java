@@ -82,9 +82,7 @@ class FaceDetector {
 
         imgToDetect = rotateBitmap(msxImage);
         imgToDraw = rotateBitmap(msxImage);
-        if (RotationHandler.isRotated) { // Reverse array to matched rotated image
-            reverseArray(vals);
-        }
+
         // Detect in image
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(imgToDetect);
 
@@ -267,14 +265,5 @@ class FaceDetector {
 
     private static int get1D(int x, int y, int width) {
         return y * width + x;
-    }
-
-    private static void reverseArray(double[] arr) {
-        for(int i = 0; i < arr.length / 2; i++)
-        {
-            double temp = arr[i];
-            arr[i] = arr[arr.length - i - 1];
-            arr[arr.length - i - 1] = temp;
-        }
     }
 }
