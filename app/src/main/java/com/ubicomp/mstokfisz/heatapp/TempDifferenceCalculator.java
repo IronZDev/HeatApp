@@ -21,8 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-import static com.ubicomp.mstokfisz.heatapp.RotationHandler.rotateBitmap;
-
 public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
     static Boolean running = false;
     private static LinkedList<MeasurementDataHolder> measurementsQueue;
@@ -153,16 +151,13 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
             if (resultsEach2 != null) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setTitle("Measurement statistics")
-                        .setMessage("Lowest temp difference sum: " + Arrays.stream(resultsEach2.diffSum).min().getAsDouble() + "K\n"
-                                + "Highest temp difference sum: " + Arrays.stream(resultsEach2.diffSum).max().getAsDouble() + "K\n"
-                                + "Average temp difference sum: " + Arrays.stream(resultsEach2.diffSum).average().orElse(Double.NaN) + "K\n"
-                                + "Number of calculations performed: " + numberOfCalculationsPerformed + "\n"
-                                + "Measurement time: " + parseNanoSeconds(elapsedTime))
+                        .setMessage("Lowest temp difference sum: " + roundDouble(Arrays.stream(resultsEach2.diffSum).min().getAsDouble()) + "K\n"
+                                + "Highest temp difference sum: " + roundDouble(Arrays.stream(resultsEach2.diffSum).max().getAsDouble()) + "K\n"
+                                + "Average temp difference sum: " + roundDouble(Arrays.stream(resultsEach2.diffSum).average().orElse(Double.NaN)) + "K\n"
+                                + "Number of comparisons performed: " + numberOfCalculationsPerformed + "\n"
+                                + "Measurement duration: " + parseNanoSeconds(elapsedTime))
                         .setCancelable(false)
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-
-                            }
+                        .setPositiveButton("OK", (dialog, id) -> {
                         });
                 AlertDialog alert = builder.create();
                 alert.show();
@@ -227,5 +222,9 @@ public class TempDifferenceCalculator extends AsyncTask<Void, Void, Void> {
             Log.d(TAG, "File not saved");
             Log.e(TAG, Objects.requireNonNull(e.getMessage()));
         }
+    }
+
+    private static double roundDouble(double val) {
+        return Math.round(val * 100.0) / 100.0;
     }
 }
